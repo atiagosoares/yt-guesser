@@ -44,6 +44,11 @@ def main():
         regionCode="US"
     )
     response = request.execute()
+
+    # Define target categories
+    target_categories = [
+            22, 24, 25
+    ]
     # Print results
     for category in response['items']:
         print(f'{category["id"]}: {category["snippet"]["title"]}')
