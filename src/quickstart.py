@@ -1,15 +1,56 @@
-# -*- coding: utf-8 -*-
+from __future__ import print_function
 
-# Sample Python code for youtube.channels.list
-# See instructions for running these code samples locally:
-# https://developers.google.com/explorer-help/code-samples#python
+import os.path
 
-from youtube_transcript_api import YouTubeTranscriptApi
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from youtube_transcript_api import YouTubeTranscriptApi as YTT
+
+# If modifying these scopes, delete the file token.json.
+SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 
 
 def main():
-    transcript = YouTubeTranscriptApi.get_transcript('WKbWOZAnfXM')
-    print(transcript)
+    """Shows basic usage of the Gmail API.
+    Lists the user's Gmail labels.
+    """
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
 
-if __name__ == "__main__":
+    youtube = build('youtube', 'v3', credentials=creds)
+
+    # List today's most popular videos
+    request = youtube.videos().list(
+        part="snippet,contentDetails,statistics",
+        chart="mostPopular",
+        regionCode="US"
+    )
+    response = request.execute()
+
+    # Print some data about the videos
+    idx = 0 
+    for video in response['items']:
+        idx += 1
+        print(f'{idx}: {video["id"]} - {video["snippet"]["publishedAt"]} - {video["snippet"]["title"]} - {video["snippet"]["channelTitle"]}') 
+
+
+if __name__ == '__main__':
     main()
