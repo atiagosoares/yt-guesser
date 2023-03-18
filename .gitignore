@@ -161,3 +161,4 @@ cython_debug/
 
 # Google API credentials
 credentials.json
+token.json
