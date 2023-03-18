@@ -37,6 +37,28 @@ def main():
 
     youtube = build('youtube', 'v3', credentials=creds)
 
+    # List video categories
+    request = youtube.videoCategories().list(
+        part="snippet",
+        hl="en_US",
+        regionCode="US"
+    )
+    response = request.execute()
+    # Print results
+    for category in response['items']:
+        print(f'{category["id"]}: {category["snippet"]["title"]}')
+
+    while response.get("nextPageToken"):
+        page_token = response["nextPageToken"]
+        request = youtube.videoCategories().list(
+            part="snippet",
+            hl="en_US",
+            regionCode="US",
+            pageToken = page_token
+        )
+    for category in response['items']:
+        print(f'{category["id"]}: {category["snippet"]["title"]}')
+
     # List today's most popular videos
     request = youtube.videos().list(
         part="snippet,contentDetails,statistics",
@@ -50,7 +72,7 @@ def main():
     idx = 0 
     for video in response['items']:
         idx += 1
-        print(f'{idx}: {video["id"]} - {video["snippet"]["publishedAt"]} - {video["snippet"]["title"]} - {video["snippet"]["channelTitle"]}') 
+        print(f'{idx}: {video["id"]} - {video["snippet"]["publishedAt"]} - {video["snippet"]["title"]} - {video["snippet"]["channelTitle"]} ({video["snippet"]["categoryId"]})') 
 
 
 if __name__ == '__main__':
