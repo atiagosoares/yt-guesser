@@ -165,3 +165,6 @@ token.json
 
 # Folder for data
 data
+
+# Terraform garbage
+.terraform*
