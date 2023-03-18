@@ -41,7 +41,8 @@ def main():
     request = youtube.videos().list(
         part="snippet,contentDetails,statistics",
         chart="mostPopular",
-        regionCode="US"
+        regionCode="US",
+        maxResults=50
     )
     response = request.execute()
 
