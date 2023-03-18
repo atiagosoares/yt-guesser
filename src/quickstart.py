@@ -38,6 +38,7 @@ def main():
     youtube = build('youtube', 'v3', credentials=creds)
 
     # List video categories
+    categories = {}
     request = youtube.videoCategories().list(
         part="snippet",
         hl="en_US",
@@ -45,13 +46,9 @@ def main():
     )
     response = request.execute()
 
-    # Define target categories
-    target_categories = [
-            22, 24, 25
-    ]
     # Print results
     for category in response['items']:
-        print(f'{category["id"]}: {category["snippet"]["title"]}')
+        categories[category['id']] = category["snippet"]["title"]
 
     while response.get("nextPageToken"):
         page_token = response["nextPageToken"]
@@ -62,22 +59,41 @@ def main():
             pageToken = page_token
         )
     for category in response['items']:
-        print(f'{category["id"]}: {category["snippet"]["title"]}')
+        categories[category['id']] = category["snippet"]["title"]
 
-    # List today's most popular videos
+    # List most popular videos
     request = youtube.videos().list(
         part="snippet,contentDetails,statistics",
         chart="mostPopular",
         regionCode="US",
-        maxResults=50
+        maxResults=20
     )
     response = request.execute()
+    print_videos(response['items'])
+    page_token = response.get('nextPageToken')
+    while page_token:
 
-    # Print some data about the videos
-    idx = 0 
-    for video in response['items']:
+        request = youtube.videos().list(
+            part="snippet,contentDetails,statistics",
+            chart="mostPopular",
+            regionCode="US",
+            maxResults=20,
+            pageToken = page_token
+        )
+        response = request.execute()
+        print_videos(response['items'])
+        page_token = response.get('nextPageToken')
+
+        stop_signal = input('Stop? (S)')
+        if stop_signal == 'S':
+            break
+
+
+def print_videos(videos: list):
+    idx = 0
+    for video in videos:
         idx += 1
-        print(f'{idx}: {video["id"]} - {video["snippet"]["publishedAt"]} - {video["snippet"]["title"]} - {video["snippet"]["channelTitle"]} ({video["snippet"]["categoryId"]})') 
+        print(f'{idx}: {video["id"]} - {video["snippet"]["publishedAt"]} - {video["snippet"]["title"][:10]}... - {video["snippet"]["channelId"]} | {video["snippet"]["channelTitle"]} - ({video["snippet"]["categoryId"]})') 
 
 
 if __name__ == '__main__':
