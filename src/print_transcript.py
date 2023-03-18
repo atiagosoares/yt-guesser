@@ -10,7 +10,7 @@ def main():
         transcript = json.load(f)
 
     for phrase in transcript:
-        print('(END)\n' + phrase['text'])
+        print(phrase['text'])
         sleep(phrase['duration'])
 
 if __name__ == '__main__':

@@ -6,8 +6,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from youtube_transcript_api import YouTubeTranscriptApi as YTT
+import json
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
@@ -34,43 +33,32 @@ def main():
         # Save the credentials for the next run
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
-
     youtube = build('youtube', 'v3', credentials=creds)
 
-    # List video categories
-    categories = {}
-    request = youtube.videoCategories().list(
-        part="snippet",
-        hl="en_US",
-        regionCode="US"
-    )
-    response = request.execute()
 
-    # Print results
-    for category in response['items']:
-        categories[category['id']] = category["snippet"]["title"]
-
-    while response.get("nextPageToken"):
-        page_token = response["nextPageToken"]
-        request = youtube.videoCategories().list(
-            part="snippet",
-            hl="en_US",
-            regionCode="US",
-            pageToken = page_token
-        )
-    for category in response['items']:
-        categories[category['id']] = category["snippet"]["title"]
+    # Load the channel list
+    with open('channel-list.txt') as f:
+        channel_list = f.readlines()
+    # Filter out comments
+    channel_list = [channel_id.split('#')[0].strip() for channel_id in channel_list]
+    print(channel_list)
 
     # List most popular videos
+    videos = []
     request = youtube.videos().list(
         part="snippet,contentDetails,statistics",
         chart="mostPopular",
         regionCode="US",
+        videoCategoryId=28, # Technology
         maxResults=20
     )
     response = request.execute()
-    print_videos(response['items'])
+    for item in response['items']:
+        if item['snippet']['channelId'] in channel_list:
+            videos.append(item)
+    print(videos)
     page_token = response.get('nextPageToken')
+
     while page_token:
 
         request = youtube.videos().list(
@@ -78,22 +66,25 @@ def main():
             chart="mostPopular",
             regionCode="US",
             maxResults=20,
+            videoCategoryId = 28,
             pageToken = page_token
         )
         response = request.execute()
-        print_videos(response['items'])
+        videos.extend(
+                [video for video in response['items'] if video['snippet']['channelId'] in channel_list]
+        )
         page_token = response.get('nextPageToken')
 
-        stop_signal = input('Stop? (S)')
-        if stop_signal == 'S':
-            break
+    # Saving results
+    with open('data/video-list.json', 'w') as f:
+        json.dump(videos, f)
 
 
 def print_videos(videos: list):
     idx = 0
     for video in videos:
         idx += 1
-        print(f'{idx}: {video["id"]} - {video["snippet"]["publishedAt"]} - {video["snippet"]["title"][:10]}... - {video["snippet"]["channelId"]} | {video["snippet"]["channelTitle"]} - ({video["snippet"]["categoryId"]})') 
+        print(f'{idx}: {video["id"]} - {video["snippet"]["publishedAt"]} - {video["snippet"]["title"][:20]}... - {video["snippet"]["channelId"]} | {video["snippet"]["channelTitle"]} - ({video["snippet"]["categoryId"]})') 
 
 
 if __name__ == '__main__':
