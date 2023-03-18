@@ -8,3 +8,6 @@ def main():
     # Save it to file
     with open('data/sample_transcript.py', 'w') as f:
         json.dump(transcript, f)
+
+if __name__ == "__main__":
+    main()
