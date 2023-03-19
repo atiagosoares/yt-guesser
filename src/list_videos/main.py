@@ -5,13 +5,16 @@ from googleapiclient.discovery import build
 import boto3
 import json
 from youtube_transcript_api import YouTubeTranscriptApi
+import gc
+import re
 
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 TOKEN_SECRET_ARN = os.environ['TOKEN_SECRET_ARN']
 CHANNEL_LIST_BUCKET = os.environ['CHANNEL_LIST_BUCKET']
 CHANNEL_LIST_KEY = os.environ['CHANNEL_LIST_KEY']
 VIDEOS_TABLE_NAME = os.environ['VIDEOS_TABLE_NAME']
-TRANSCRIPT_BUCKET = os.environ['TRANSCRIPT_BUCKET']
+PHRASES_TABLE_NAME = os.environ['PHRASES_TABLE_NAME']
+TRANSCRIPTS_BUCKET = os.environ['TRANSCRIPT_BUCKET']
 
 def hander(event, context):
     
@@ -28,18 +31,23 @@ def hander(event, context):
     dynamodb = boto3.resource('dynamodb')
     videos_table = dynamodb.Table(VIDEOS_TABLE_NAME)
     # Save videos to DynamoDB
-    create_video_record(videos, videos_table)
+    create_video_records(videos, videos_table)
 
     # Initialize the s3 client
-    transcript_bucket = boto3.resource('s3').Bucket(TRANSCRIPT_BUCKET)
+    transcript_bucket = boto3.resource('s3').Bucket(TRANSCRIPTS_BUCKET)
     # Download transcripts
-    transcript_results = download_transcripts(videos, transcript_bucket)
+    transcripts = download_transcripts(videos, transcript_bucket)
+
+    # Coalesce transcripts
+    coalesced_transcripts = coalesce_transcripts(transcripts)
+    save_coalesced_transcripts(coalesced_transcripts, transcript_bucket)
     
-
-
-    # Saving results
-    with open('data/video-list.json', 'w') as f:
-        json.dump(videos, f)
+    # Select candidate phrases
+    candidate_phrases = gen_candidate_phrases(coalesced_transcripts)
+    # Initialize the phrases table
+    phrases_table = dynamodb.Table(PHRASES_TABLE_NAME)
+    # Save records to DynamoDB
+    create_phrase_records(candidate_phrases, phrases_table)
 
 def get_credentials():
 
@@ -105,7 +113,7 @@ def get_video_list(youtube, channel_list):
         page_token = response.get('nextPageToken')
     return videos
 
-def create_video_record(videos, table):
+def create_video_records(videos, table):
     for video in videos:
         table.put_item(
             Item={
@@ -114,21 +122,94 @@ def create_video_record(videos, table):
                 'title': video['snippet']['title'],
                 'description': video['snippet']['description'],
                 'publishedAt': video['snippet']['publishedAt'],
-                'transcript': 's3://{}/{}.json'.format(TRANSCRIPT_BUCKET, video['id'])
+                'transcript': 's3://{}/{}.json'.format(TRANSCRIPTS_BUCKET, video['id'])
             }
         )
 
 def download_transcripts(videos, bucket):
-    responses = []
+    objs = []
     for video in videos:
         try:
             # Get the transcipt
             transcript = YouTubeTranscriptApi.get_transcript(video['id'])
             # Save it to s3
             response = bucket.put_object(
-                Key='{}.json'.format(video['id']),
+                Key='transcripts/{}.json'.format(video['id']),
+                Body=json.dumps(transcript)
             )
-            responses.append(response)
+            objs.append(response)
 
-        except:
+        except Exception as e:
             print('No transcript found for {}'.format(video['id']))
+    
+    return objs
+
+def coalesce_transcripts(transcripts): 
+    new_buffer = {"text": "", "start": 0.0, "duration": 0.0}
+    coalesced_transcripts = []
+    for transcript in transcripts:
+        # Get transcript content
+        transcript_content = json.loads(transcript.get()['Body'].read().decode('utf-8'))
+        c_transcript = {
+            "video_id": transcript.key.split('/')[1].split('.')[0],
+            "phrases": []
+        }
+
+        buffer = new_buffer.copy()
+        for item in transcript_content:
+            # If this item start with "-", start a new phrase
+            if item['text'].startswith('-'):
+                if len(buffer["text"]) > 0:
+                    c_transcript['phrases'].append(buffer.copy())
+                    buffer = new_buffer.copy()
+                    buffer['start'] = item['start']
+                    gc.collect()
+
+            # Append content
+            buffer['text'] += ' ' + item['text']
+            buffer['duration'] += item['duration']
+
+        # Save the last buffer to the list of phrases
+        c_transcript['phrases'].append(buffer.copy())
+        coalesced_transcripts.append(c_transcript)
+
+    return coalesce_transcripts
+
+def save_coalesced_transcripts(transcripts, bucket):
+    for transcript in transcripts:
+        response = bucket.put_object(
+            Key='coalesced-transcripts/{}.json'.format(transcript['video_id']),
+            Body = json.dumps(transcript['phrases'])
+        )
+
+def gen_candidate_phrases(transcripts):
+    phrases = []
+    for transcript in transcripts:
+        for phrase in transcript['phrases']:
+            
+            text = phrase['text']
+            # remove the initial '- '
+            if phrase.startswith('- '):
+                text = text[2:]
+            
+            # Check if the phrase specified who said it
+            said_by = None
+            if phrase.startswith('['):
+                said_by = text.split(']')[0][1:]
+                phrase = text.split(']')[1]
+            
+            # Generate the object
+            phrases.append({
+                'video_id': transcript['video_id'],
+                'said_by': said_by,
+                'start' : phrase['start'],
+                'duration': phrase['duration'],
+                'text': text
+            })
+    return phrases
+
+def create_phrase_records(phrases, table):
+    for phrase in phrases:
+        table.put_item(
+            Item=phrase
+    )
