@@ -1,18 +1,17 @@
-from __future__ import print_function
-
-import os.path
-
+import os
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import boto3
 import json
+from youtube_transcript_api import YouTubeTranscriptApi
 
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 TOKEN_SECRET_ARN = os.environ['TOKEN_SECRET_ARN']
 CHANNEL_LIST_BUCKET = os.environ['CHANNEL_LIST_BUCKET']
 CHANNEL_LIST_KEY = os.environ['CHANNEL_LIST_KEY']
+VIDEOS_TABLE_NAME = os.environ['VIDEOS_TABLE_NAME']
+TRANSCRIPT_BUCKET = os.environ['TRANSCRIPT_BUCKET']
 
 def hander(event, context):
     
@@ -25,6 +24,17 @@ def hander(event, context):
 
     # Get the list of videos
     videos = get_video_list(youtube, channel_list)
+    # Initialize the dynamodb client
+    dynamodb = boto3.resource('dynamodb')
+    videos_table = dynamodb.Table(VIDEOS_TABLE_NAME)
+    # Save videos to DynamoDB
+    create_video_record(videos, videos_table)
+
+    # Initialize the s3 client
+    transcript_bucket = boto3.resource('s3').Bucket(TRANSCRIPT_BUCKET)
+    # Download transcripts
+    transcript_results = download_transcripts(videos, transcript_bucket)
+    
 
 
     # Saving results
@@ -67,7 +77,7 @@ def get_video_list(youtube, channel_list):
     # List most popular videos
     videos = []
     request = youtube.videos().list(
-        part="snippet,contentDetails,statistics",
+        part="snippet",
         chart="mostPopular",
         regionCode="US",
         videoCategoryId=28, # Technology
@@ -81,7 +91,7 @@ def get_video_list(youtube, channel_list):
 
     while page_token:
         request = youtube.videos().list(
-            part="snippet,contentDetails,statistics",
+            part="snippet",
             chart="mostPopular",
             regionCode="US",
             maxResults=20,
@@ -94,3 +104,31 @@ def get_video_list(youtube, channel_list):
         )
         page_token = response.get('nextPageToken')
     return videos
+
+def create_video_record(videos, table):
+    for video in videos:
+        table.put_item(
+            Item={
+                'videoId': video['id'],
+                'channelId': video['snippet']['channelId'],
+                'title': video['snippet']['title'],
+                'description': video['snippet']['description'],
+                'publishedAt': video['snippet']['publishedAt'],
+                'transcript': 's3://{}/{}.json'.format(TRANSCRIPT_BUCKET, video['id'])
+            }
+        )
+
+def download_transcripts(videos, bucket):
+    responses = []
+    for video in videos:
+        try:
+            # Get the transcipt
+            transcript = YouTubeTranscriptApi.get_transcript(video['id'])
+            # Save it to s3
+            response = bucket.put_object(
+                Key='{}.json'.format(video['id']),
+            )
+            responses.append(response)
+
+        except:
+            print('No transcript found for {}'.format(video['id']))
