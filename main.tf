@@ -33,21 +33,21 @@ resource "aws_iam_role" "iam_for_lambda" {
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
-data "archive_file" "list_videos_package" {
+data "archive_file" "do_everything_package" {
   type        = "zip"
-  source_file = "src/list_videos/main.py"
-  output_path = "build/list_videos.zip"
+  source_file = "src/do_everything/main.py"
+  output_path = "build/do_everything.zip"
 }
 
-resource "aws_lambda_function" "list_videos" {
+resource "aws_lambda_function" "do_everything" {
   # If the file is not in the current working directory you will need to include a
   # path.module in the filename.
-  filename      = "build/list_videos.zip"
-  function_name = "${var.PROJECT}-${var.ENV}-list_videos"
+  filename      = "build/do_everything.zip"
+  function_name = "${var.PROJECT}-${var.ENV}-doeverything"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "main.hander"
 
-  source_code_hash = data.archive_file.list_videos_package.output_base64sha256
+  source_code_hash = data.archive_file.do_everything_package.output_base64sha256
 
   runtime = "python3.9"
 }
