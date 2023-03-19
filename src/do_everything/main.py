@@ -6,10 +6,9 @@ import boto3
 import json
 from youtube_transcript_api import YouTubeTranscriptApi
 import gc
-import re
 
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
-TOKEN_SECRET_ARN = os.environ['TOKEN_SECRET_ARN']
+TOKEN_PARAMETER_NAME = os.environ['TOKEN_PARAMETER_NAME']
 CHANNEL_LIST_BUCKET = os.environ['CHANNEL_LIST_BUCKET']
 CHANNEL_LIST_KEY = os.environ['CHANNEL_LIST_KEY']
 VIDEOS_TABLE_NAME = os.environ['VIDEOS_TABLE_NAME']
@@ -52,7 +51,7 @@ def hander(event, context):
 def get_credentials():
 
     authorized_user_info = json.loads(
-        get_secret(TOKEN_SECRET_ARN)
+        get_parameter_value(TOKEN_PARAMETER_NAME)
     )
     creds = Credentials.from_authorized_user_info(
         authorized_user_info,
@@ -63,11 +62,11 @@ def get_credentials():
         creds.refresh(Request())
     return creds
 
-def get_secret(secret_arn):
+def get_parameter_value(parameter_name):
     session = boto3.session.Session()
-    client = session.client(service_name='secretsmanager')
-    get_secret_value_response = client.get_secret_value(SecretId=secret_arn)
-    return get_secret_value_response['SecretString']
+    ssm = session.client('ssm')
+    parameter = ssm.get_parameter(Name = parameter_name)
+    return parameter['Parameter']['Value']
 
 def get_channel_list():
     # Load the txt file from s3
