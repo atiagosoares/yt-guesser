@@ -161,7 +161,7 @@ def coalesce_transcripts(transcripts):
                 if len(buffer["text"]) > 0:
                     c_transcript['phrases'].append(buffer.copy())
                     buffer = new_buffer.copy()
-                    buffer['start'] = int(item['start'] * 1000) 
+                    buffer['start'] = item['start'] 
                     gc.collect()
 
             # Append content
@@ -201,8 +201,8 @@ def gen_candidate_phrases(transcripts):
             phrases.append({
                 'video_id': transcript['video_id'],
                 'said_by': said_by,
-                'start' : phrase['start'],
-                'duration': phrase['duration'],
+                'start' : int(phrase['start']*1000),
+                'duration': int(phrase['duration']*1000),
                 'text': text
             })
     return phrases
