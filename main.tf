@@ -36,6 +36,10 @@ resource "aws_s3_object" "channel_list" {
   etag = filemd5("channel-list.txt")
 }
 
+resource "aws_s3_bucket" "transcripts_bucket" {
+  bucket = "${var.PROJECT}-${var.ENV}-transcripts"
+}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
@@ -68,6 +72,8 @@ data "aws_iam_policy_document" "lambda" {
     resources = [
       aws_s3_bucket.channel_list_bucket.arn,
       "${aws_s3_bucket.channel_list_bucket.arn}/*"
+      aws_s3_bucket.transcripts_bucket.arn,
+      "${aws_s3_bucket.transcripts_bucket.arn}/*"
     ]
   }
 }
@@ -96,11 +102,14 @@ resource "aws_lambda_function" "do_everything" {
   handler       = "main.hander"
   source_code_hash = data.archive_file.do_everything_package.output_base64sha256
   runtime = "python3.9"
+  memory_size = 2048
+  timeout = 300
   environment {
     variables = {
       TOKEN_PARAMENTER_NAME = aws_ssm_parameter.google_token.name
       CHANNEL_LIST_BUCKET = aws_s3_bucket.channel_list_bucket.id
       CHANNEL_LIST_KEY = aws_s3_object.channel_list.key
+      TRANSCRIPTS_BUCKET = aws_s3_bucket.transcripts_bucket.id
     }
   }
 }
