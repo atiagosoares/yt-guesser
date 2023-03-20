@@ -53,6 +53,37 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
+resource "aws_dynamodb_table" "videos_table" {
+  name           = "${var.PROJECT}-${var.ENV}-videos"
+  billing_mode   = "PROVISIONED"
+  hash_key       = "channelId"
+  range_key      = "videoId"
+
+  attribute {
+    name = "channelId"
+    type = "S"
+  }
+
+  attribute {
+    name = "videoId"
+    type = "S"
+  }
+
+  attribute {
+    name = "title"
+    type = "S"
+  }
+
+  attibute {
+    name = "description"
+    type = "S"
+  }
+
+  attribute {
+    name = "publishedAt"
+    type = "S"
+  }
+}
 data "aws_iam_policy_document" "lambda" {
   statement {
     effect = "Allow"
@@ -71,12 +102,25 @@ data "aws_iam_policy_document" "lambda" {
     ]
     resources = [
       aws_s3_bucket.channel_list_bucket.arn,
-      "${aws_s3_bucket.channel_list_bucket.arn}/*"
+      "${aws_s3_bucket.channel_list_bucket.arn}/*",
       aws_s3_bucket.transcripts_bucket.arn,
       "${aws_s3_bucket.transcripts_bucket.arn}/*"
     ]
   }
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:GetItem"
+    ]
+    resources = [
+      aws_dynamodb_table.videos_table.arn
+    ]
+  }
 }
+
 
 resource "aws_iam_role" "iam_for_lambda" {
   name               = "iam_for_lambda"
@@ -110,6 +154,7 @@ resource "aws_lambda_function" "do_everything" {
       CHANNEL_LIST_BUCKET = aws_s3_bucket.channel_list_bucket.id
       CHANNEL_LIST_KEY = aws_s3_object.channel_list.key
       TRANSCRIPTS_BUCKET = aws_s3_bucket.transcripts_bucket.id
+      VIDEOS_TABLE_NAME = aws_dynamodb_table.videos_table.name
     }
   }
 }
