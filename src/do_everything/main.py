@@ -188,14 +188,14 @@ def gen_candidate_phrases(transcripts):
             
             text = phrase['text']
             # remove the initial '- '
-            if phrase.startswith('- '):
+            if text.startswith('- '):
                 text = text[2:]
             
             # Check if the phrase specified who said it
             said_by = None
-            if phrase.startswith('['):
+            if text.startswith('['):
                 said_by = text.split(']')[0][1:]
-                phrase = text.split(']')[1]
+                text = text.split(']')[1]
             
             # Generate the object
             phrases.append({
