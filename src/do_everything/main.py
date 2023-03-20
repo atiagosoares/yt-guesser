@@ -172,7 +172,7 @@ def coalesce_transcripts(transcripts):
         c_transcript['phrases'].append(buffer.copy())
         coalesced_transcripts.append(c_transcript)
 
-    return coalesce_transcripts
+    return coalesced_transcripts
 
 def save_coalesced_transcripts(transcripts, bucket):
     for transcript in transcripts:
