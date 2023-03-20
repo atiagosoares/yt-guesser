@@ -55,20 +55,37 @@ data "aws_iam_policy_document" "assume_role" {
 
 resource "aws_dynamodb_table" "videos_table" {
   name           = "${var.PROJECT}-${var.ENV}-videos"
-  billing_mode   = "PROVISIONED"
+  billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "channelId"
   range_key      = "videoId"
 
   attribute {
-    name = "channelId"
+    name = "channel_id"
     type = "S"
   }
 
   attribute {
-    name = "videoId"
+    name = "video_id"
     type = "S"
   }
 }
+
+resource "aws_dynamodb_table" "phrases_table" {
+  name           = "${var.PROJECT}-${var.ENV}-phrases"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "video_id"
+  range_key = "start"
+
+  attribute {
+    name = "video_id"
+    type = "S"
+  }
+  attribute {
+    name = "start"
+    type = "N"
+  }
+}
+
 data "aws_iam_policy_document" "lambda" {
   statement {
     effect = "Allow"
@@ -101,7 +118,8 @@ data "aws_iam_policy_document" "lambda" {
       "dynamodb:GetItem"
     ]
     resources = [
-      aws_dynamodb_table.videos_table.arn
+      aws_dynamodb_table.videos_table.arn,
+      aws_dynamodb_table.phrases_table.arn
     ]
   }
 }
@@ -140,6 +158,7 @@ resource "aws_lambda_function" "do_everything" {
       CHANNEL_LIST_KEY = aws_s3_object.channel_list.key
       TRANSCRIPTS_BUCKET = aws_s3_bucket.transcripts_bucket.id
       VIDEOS_TABLE_NAME = aws_dynamodb_table.videos_table.name
+      PHRASES_TABBLE_NAME = aws_dynamodb_table.phrases_table.name
     }
   }
 }

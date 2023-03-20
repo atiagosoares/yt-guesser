@@ -116,11 +116,11 @@ def create_video_records(videos, table):
     for video in videos:
         table.put_item(
             Item={
-                'videoId': video['id'],
-                'channelId': video['snippet']['channelId'],
+                'video_id': video['id'],
+                'channel_id': video['snippet']['channelId'],
                 'title': video['snippet']['title'],
                 'description': video['snippet']['description'],
-                'publishedAt': video['snippet']['publishedAt'],
+                'published_at': video['snippet']['publishedAt'],
                 'transcript': 's3://{}/{}.json'.format(TRANSCRIPTS_BUCKET, video['id'])
             }
         )
