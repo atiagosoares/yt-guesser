@@ -65,7 +65,7 @@ def get_credentials():
 def get_parameter_value(parameter_name):
     session = boto3.session.Session()
     ssm = session.client('ssm')
-    parameter = ssm.get_parameter(Name = parameter_name)
+    parameter = ssm.get_parameter(Name = parameter_name, WithDecryption = True)
     return parameter['Parameter']['Value']
 
 def get_channel_list():
