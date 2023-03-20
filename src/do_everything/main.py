@@ -6,7 +6,6 @@ import boto3
 import json
 from youtube_transcript_api import YouTubeTranscriptApi
 import gc
-from decimal import Decimal
 
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 TOKEN_PARAMETER_NAME = os.environ['TOKEN_PARAMETER_NAME']
@@ -162,7 +161,7 @@ def coalesce_transcripts(transcripts):
                 if len(buffer["text"]) > 0:
                     c_transcript['phrases'].append(buffer.copy())
                     buffer = new_buffer.copy()
-                    buffer['start'] = Decimal(item['start'])
+                    buffer['start'] = int(item['start'] * 1000) 
                     gc.collect()
 
             # Append content
