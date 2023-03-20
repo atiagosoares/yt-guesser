@@ -21,6 +21,21 @@ resource "aws_ssm_parameter" "google_token" {
   value = "hi"
 }
 
+resource "aws_s3_bucket" "channel_list_bucket" {
+  bucket = "${var.PROJECT}-${var.ENV}-channel-list"
+}
+
+resource "aws_s3_object" "channel_list" {
+  bucket = aws_s3_bucket.channel_list_bucket.id
+  key    = "channel-list"
+  source = "channel-list.txt"
+
+  # The filemd5() function is available in Terraform 0.11.12 and later
+  # For Terraform 0.11.11 and earlier, use the md5() function and the file() function:
+  # etag = "${md5(file("path/to/file"))}"
+  etag = filemd5("channel-list.txt")
+}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
@@ -42,6 +57,17 @@ data "aws_iam_policy_document" "lambda" {
     ]
     resources = [
       aws_ssm_parameter.google_token.arn
+    ]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject"
+    ]
+    resources = [
+      aws_s3_bucket.channel_list_bucket.arn,
+      "${aws_s3_bucket.channel_list_bucket.arn}/*"
     ]
   }
 }
@@ -73,6 +99,8 @@ resource "aws_lambda_function" "do_everything" {
   environment {
     variables = {
       TOKEN_PARAMENTER_NAME = aws_ssm_parameter.google_token.name
+      CHANNEL_LIST_BUCKET = aws_s3_bucket.channel_list_bucket.id
+      CHANNEL_LIST_KEY = aws_s3_object.channel_list.key
     }
   }
 }
