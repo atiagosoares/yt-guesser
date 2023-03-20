@@ -68,21 +68,6 @@ resource "aws_dynamodb_table" "videos_table" {
     name = "videoId"
     type = "S"
   }
-
-  attribute {
-    name = "title"
-    type = "S"
-  }
-
-  attibute {
-    name = "description"
-    type = "S"
-  }
-
-  attribute {
-    name = "publishedAt"
-    type = "S"
-  }
 }
 data "aws_iam_policy_document" "lambda" {
   statement {
