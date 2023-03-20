@@ -18,7 +18,7 @@ terraform {
 resource "aws_ssm_parameter" "google_token" {
   name  = "${var.PROJECT}-${var.ENV}-google-token"
   type  = "SecureString"
-  value = "hi"
+  value = file("token.json") 
 }
 
 resource "aws_s3_bucket" "channel_list_bucket" {
