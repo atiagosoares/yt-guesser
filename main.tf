@@ -56,8 +56,8 @@ data "aws_iam_policy_document" "assume_role" {
 resource "aws_dynamodb_table" "videos_table" {
   name           = "${var.PROJECT}-${var.ENV}-videos"
   billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "channelId"
-  range_key      = "videoId"
+  hash_key       = "channel_id"
+  range_key      = "video_id"
 
   attribute {
     name = "channel_id"
@@ -153,12 +153,12 @@ resource "aws_lambda_function" "do_everything" {
   timeout = 300
   environment {
     variables = {
-      TOKEN_PARAMENTER_NAME = aws_ssm_parameter.google_token.name
+      TOKEN_PARAMETER_NAME = aws_ssm_parameter.google_token.name
       CHANNEL_LIST_BUCKET = aws_s3_bucket.channel_list_bucket.id
       CHANNEL_LIST_KEY = aws_s3_object.channel_list.key
       TRANSCRIPTS_BUCKET = aws_s3_bucket.transcripts_bucket.id
       VIDEOS_TABLE_NAME = aws_dynamodb_table.videos_table.name
-      PHRASES_TABBLE_NAME = aws_dynamodb_table.phrases_table.name
+      PHRASES_TABLE_NAME = aws_dynamodb_table.phrases_table.name
     }
   }
 }
