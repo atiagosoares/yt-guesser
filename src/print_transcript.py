@@ -10,8 +10,8 @@ def main():
         transcript = json.load(f)
 
     for phrase in transcript:
-        start_str = str(int(phrase['start']*1000))
-        print(start_str + " " + phrase['text'])
+        start = int(phrase['start']*1000)
+        print(f'{start:09d} {phrase["text"]}')
 
 if __name__ == '__main__':
     main()
