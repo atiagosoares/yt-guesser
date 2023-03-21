@@ -11,7 +11,7 @@ def main():
 
     for phrase in transcript:
         start = int(phrase['start']*1000)
-        print(f'{start:09d} {phrase["text"]}')
+        print(phrase["text"])
 
 if __name__ == '__main__':
     main()
