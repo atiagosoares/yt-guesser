@@ -188,8 +188,7 @@ def gen_candidate_phrases(transcripts):
             
             text = phrase['text']
             # remove the initial '- '
-            if text.startswith('- '):
-                text = text[2:]
+            text = text.strip('- ')
             
             # Check if the phrase specified who said it
             said_by = None
