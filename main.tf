@@ -1,10 +1,10 @@
 variable "PROJECT" {
-	type = string
-	default = "yt-guesser"
+  type = string
+  default = "yt-guesser"
 }
 variable "ENV" {
-	type = string
-	default = "dev"
+  type = string
+  default = "dev"
 }
 
 terraform {
@@ -161,4 +161,59 @@ resource "aws_lambda_function" "do_everything" {
       PHRASES_TABLE_NAME = aws_dynamodb_table.phrases_table.name
     }
   }
+}
+
+# API
+resource "aws_api_gateway_rest_api" "guesser_api" {
+  name = "${var.PROJECT}-${var.ENV}-api"
+}
+
+# /videos 
+resource "aws_api_gateway_resource" "videos" {
+  parent_id   = aws_api_gateway_rest_api.guesser_api.root_resource_id
+  path_part   = "videos"
+  rest_api_id = aws_api_gateway_rest_api.guesser_api.id
+}
+
+resource "aws_api_gateway_method" "videos_get" {
+  authorization = "NONE"
+  http_method   = "GET"
+  resource_id   = aws_api_gateway_resource.videos.id
+  rest_api_id   = aws_api_gateway_rest_api.guesser_api.id
+}
+
+resource "aws_api_gateway_integration" "videos_get_mock" {
+  http_method = aws_api_gateway_method.videos_get.http_method
+  resource_id = aws_api_gateway_resource.videos.id
+  rest_api_id = aws_api_gateway_rest_api.guesser_api.id
+  type        = "MOCK"
+}
+
+resource "aws_api_gateway_deployment" "api_deployment" {
+  rest_api_id = aws_api_gateway_rest_api.guesser_api.id
+
+  triggers = {
+    # NOTE: The configuration below will satisfy ordering considerations,
+    #       but not pick up all future REST API changes. More advanced patterns
+    #       are possible, such as using the filesha1() function against the
+    #       Terraform configuration file(s) or removing the .id references to
+    #       calculate a hash against whole resources. Be aware that using whole
+    #       resources will show a difference after the initial implementation.
+    #       It will stabilize to only change when resources change afterwards.
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.videos.id,
+      aws_api_gateway_method.videos_get.id,
+      aws_api_gateway_integration.videos_get_mock.id,
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_api_gateway_stage" "default_stage" {
+  deployment_id = aws_api_gateway_deployment.api_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.guesser_api.id
+  stage_name    = "v1"
 }
