@@ -124,7 +124,6 @@ data "aws_iam_policy_document" "lambda" {
   }
 }
 
-
 resource "aws_iam_role" "iam_for_lambda" {
   name               = "iam_for_lambda"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
@@ -180,6 +179,55 @@ resource "aws_api_gateway_method" "videos_get" {
   http_method   = "GET"
   resource_id   = aws_api_gateway_resource.videos.id
   rest_api_id   = aws_api_gateway_rest_api.guesser_api.id
+}
+
+data "aws_iam_policy_document" "videos_get_backend" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:Query",
+      "dynamodb:Scan"
+    ]
+    resources = [
+      aws_dynamodb_table.videos_table.arn,
+      aws_dynamodb_table.phrases_table.arn
+    ]
+  }
+}
+
+resource "aws_iam_role" "videos_get_backend_role" {
+  name               = "${var.PROJECT}-${var.ENV}-videos-get-backend-role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+  inline_policy {
+    name = "lambda"
+    policy = data.aws_iam_policy_document.videos_get_backend.json
+  }
+}
+
+data "archive_file" "videos_get_backend_package" {
+  type        = "zip"
+  source_dir = "build/videos_get_backend"
+  output_path = "build/videos_get_backend.zip"
+}
+
+resource "aws_lambda_function" "videos_get_backend" {
+  # If the file is not in the current working directory you will need to include a
+  # path.module in the filename.
+  filename      = data.archive_file.videos_get_backend_package.output_path 
+  function_name = "${var.PROJECT}-${var.ENV}-videos-get"
+  role          = aws_iam_role.videos_get_backend_role.arn
+  handler       = "main.hander"
+  source_code_hash = data.archive_file.videos_get_backend_package.output_base64sha256
+  runtime = "python3.9"
+  memory_size = 2048
+  timeout = 300
+  environment {
+    variables = {
+      VIDEOS_TABLE_NAME = aws_dynamodb_table.videos_table.name
+      PHRASES_TABLE_NAME = aws_dynamodb_table.phrases_table.name
+    }
+  }
 }
 
 resource "aws_api_gateway_integration" "videos_get_mock" {
