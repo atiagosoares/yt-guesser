@@ -3,7 +3,12 @@ from chalice import Chalice
 
 app = Chalice(app_name='yt_guesser_api')
 
-
+_DB = None
+def get_app_db():
+    global _DB
+    if _DB is None:
+        _DB = InMemoryTodoDB()
+    return _DB
 
 @app.route('/channels', methods = ['GET'])
 def channels_list():
@@ -14,12 +19,12 @@ def channels_get(channel_id):
     return {'action': f'You choose to fetch the specific channel {channel_id}'}
 
 @app.route('/channels', methods = ['POST'])
-def channels_create():
+def channels_add():
     body = app.current_request.json_body
     return {'action': f'{type(body)}'}
 
 @app.route('/channels/{channel_id}', methods = ['DELETE'])
-def channels_delete(channel_id):
+def channels_remove(channel_id):
     return {'action': f'You choose to delete the specific channel {channel_id}'}
 
 @app.route('/videos', methods = ['GET'])
