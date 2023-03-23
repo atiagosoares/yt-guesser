@@ -4,29 +4,25 @@ from chalice import Chalice
 app = Chalice(app_name='yt_guesser_api')
 
 
-@app.route('/channels/{channel_id}')
-def channels(channel_id):
+@app.route('/channels')
+def channels_list():
+    return {'action': 'You choose to list all channels'}
 
-    if not channel_id:
-        return {'action': 'You choose to list all channels'}
-    else:
-        return {'action': f'You choose to fetch the specific channel {channel_id}'}
+@app.route('/channels/{channel_id}')
+def channels_get(channel_id):
+    return {'action': f'You choose to fetch the specific channel {channel_id}'}
+
+@app.route('/videos')
+def videos_list():
+    return {'action': 'You choose to list all videos'}
 
 @app.route('/videos/{video_id}')
-def videos(video_id):
-    if not video_id:
-        return {'action': 'You choose to list all videos'}
-    else:
-        return {'action': f'You choose to fetch the specific video {video_id}'}
+def videos_get(video_id):
+    return {'action': f'You choose to fetch the specific video {video_id}'}
 
-
-@app.route('/transcripts/{video_id}')
-def transcript(video_id):
-    if not video_id:
-        return {'action': 'You choose to list all transcripts'}
-    else:
-        return {'action': f'You choose to fetch the specific transcript {video_id}'}
-
+@app.route('/transcripts')
+def transcript():
+    return {'action': 'You choose to list transcripts'} 
 
 
 # The view function above will return {"hello": "world"}
