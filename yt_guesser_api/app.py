@@ -1,9 +1,21 @@
 from chalice import Chalice
-
+from chalicelib import db
+import os
+import boto3
 
 app = Chalice(app_name='yt_guesser_api')
 
 _DB = None
+def get_db():
+    global _DB
+    if _DB is None:
+        # Create the DynamoDB resources
+        channels_table = boto3.resource('dynamodb').Table(os.environ['CHANNELS_TABLE_NAME'])
+        videos_table = boto3.resource('dynamodb').Table(os.environ['VIDEOS_TABLE_NAME'])
+        transcripts_table = boto3.resource('dynamodb').Table(os.environ['TRANSCRIPTS_TABLE_NAME'])
+        _DB = db.DynamoDB(channels_table, videos_table, transcripts_table)
+    return _DB
+
 def get_app_db():
     global _DB
     if _DB is None:
@@ -12,28 +24,37 @@ def get_app_db():
 
 @app.route('/channels', methods = ['GET'])
 def channels_list():
-    return {'action': 'You choose to list all channels'}
+    items = get_db().channels_list()
+    return items
 
 @app.route('/channels/{channel_id}', methods = ['GET'])
 def channels_get(channel_id):
-    return {'action': f'You choose to fetch the specific channel {channel_id}'}
+    item = get_db().channels_get(channel_id)
+    return item
 
 @app.route('/channels', methods = ['POST'])
 def channels_add():
-    body = app.current_request.json_body
-    return {'action': f'{type(body)}'}
+    request = app.current_request
+    channel = {
+        'id': request.json_body['id'] 
+    }
+    result = get_db().channels_create(channel)
+    return result
 
 @app.route('/channels/{channel_id}', methods = ['DELETE'])
 def channels_remove(channel_id):
-    return {'action': f'You choose to delete the specific channel {channel_id}'}
+    result = get_db().channels_delete(channel_id)
+    return result
 
 @app.route('/videos', methods = ['GET'])
 def videos_list():
-    return {'action': 'You choose to list all videos'}
+    items = get_db().videos_list()
+    return items
 
 @app.route('/videos/{video_id}', methods = ['GET'])
 def videos_get(video_id):
-    return {'action': f'You choose to fetch the specific video {video_id}'}
+    item = get_db().videos_get(video_id)
+    return item
 
 @app.route('/transcripts', methods = ['GET'])
 def transcripts_list():
