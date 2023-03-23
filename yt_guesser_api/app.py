@@ -4,25 +4,38 @@ from chalice import Chalice
 app = Chalice(app_name='yt_guesser_api')
 
 
-@app.route('/channels')
+
+@app.route('/channels', methods = ['GET'])
 def channels_list():
     return {'action': 'You choose to list all channels'}
 
-@app.route('/channels/{channel_id}')
+@app.route('/channels/{channel_id}', methods = ['GET'])
 def channels_get(channel_id):
     return {'action': f'You choose to fetch the specific channel {channel_id}'}
 
-@app.route('/videos')
+@app.route('/channels', methods = ['POST'])
+def channels_create():
+    return {'action': 'You choose to create a new channel'}
+
+@app.route('/channels/{channel_id}', methods = ['DELETE'])
+def channels_delete(channel_id):
+    return {'action': f'You choose to delete the specific channel {channel_id}'}
+
+@app.route('/videos', methods = ['GET'])
 def videos_list():
     return {'action': 'You choose to list all videos'}
 
-@app.route('/videos/{video_id}')
+@app.route('/videos/{video_id}', methods = ['GET'])
 def videos_get(video_id):
     return {'action': f'You choose to fetch the specific video {video_id}'}
 
-@app.route('/transcripts')
-def transcript():
+@app.route('/transcripts', methods = ['GET'])
+def transcripts_list():
     return {'action': 'You choose to list transcripts'} 
+
+@app.route('/transcripts/curate', methods = ['POST'])
+def transcripts_curate():
+    return {'action': 'You choose to curate transcripts'}
 
 
 # The view function above will return {"hello": "world"}
