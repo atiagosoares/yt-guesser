@@ -15,7 +15,8 @@ def channels_get(channel_id):
 
 @app.route('/channels', methods = ['POST'])
 def channels_create():
-    return {'action': 'You choose to create a new channel'}
+    body = app.current_request.json_body
+    return {'action': f'{type(body)}'}
 
 @app.route('/channels/{channel_id}', methods = ['DELETE'])
 def channels_delete(channel_id):
@@ -35,7 +36,10 @@ def transcripts_list():
 
 @app.route('/transcripts/curate', methods = ['POST'])
 def transcripts_curate():
-    return {'action': 'You choose to curate transcripts'}
+    request = app.current_request
+    body = request.json_body
+
+    return {'action': f'{type(body)}'}
 
 
 # The view function above will return {"hello": "world"}
