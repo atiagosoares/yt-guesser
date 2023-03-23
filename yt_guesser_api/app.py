@@ -1,11 +1,22 @@
-from chalice import Chalice
-from chalicelib import db
 import os
+import json
+
+from chalice import Chalice, NotFoundError
+from chalicelib import db
 import boto3
 
-app = Chalice(app_name='yt_guesser_api')
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+
+GOOGLE_TOKEN_PARAMETER_NAME = os.environ.get('GOOGLE_TOKEN_PARAMETER_NAME')
+SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 
 _DB = None
+_YT = None
+
+# -------------- NECCESSARY BULLSHIT --------------
 def get_db():
     global _DB
     if _DB is None:
@@ -16,11 +27,31 @@ def get_db():
         _DB = db.DynamoDB(channels_table, videos_table, transcripts_table)
     return _DB
 
-def get_app_db():
-    global _DB
-    if _DB is None:
-        _DB = InMemoryTodoDB()
-    return _DB
+def get_yt():
+    global _YT
+    if not _YT:
+        authorized_user_info = json.loads(
+            get_parameter_value(GOOGLE_TOKEN_PARAMETER_NAME)
+        )
+        creds = Credentials.from_authorized_user_info(
+            authorized_user_info,
+            SCOPES
+        )
+        # If there are no (valid) credentials available, let the user log in.
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        _YT = build('youtube', 'v3', credentials=creds)
+    return _YT
+
+def get_parameter_value(parameter_name):
+    session = boto3.session.Session()
+    ssm = session.client('ssm')
+    parameter = ssm.get_parameter(Name = parameter_name, WithDecryption = True)
+    return parameter['Parameter']['Value']
+
+
+# -------------- API --------------
+app = Chalice(app_name='yt_guesser_api')
 
 @app.route('/channels', methods = ['GET'])
 def channels_list():
@@ -30,21 +61,46 @@ def channels_list():
 @app.route('/channels/{channel_id}', methods = ['GET'])
 def channels_get(channel_id):
     item = get_db().channels_get(channel_id)
+    if not item:
+        raise NotFoundError('Channel not found')
+        
     return item
 
 @app.route('/channels', methods = ['POST'])
 def channels_add():
-    request = app.current_request
-    channel = {
-        'id': request.json_body['id'] 
-    }
-    result = get_db().channels_create(channel)
-    return result
+
+    channel_id = app.current_request.json_body['id']
+    # Check if channel aready exists
+    if get_db().channels_get(channel_id):
+        return {'error': 'Channel already exists'}
+
+    # Search for this channel in the youtubde data api
+    request = get_yt().channels().list(
+        part='id,snippet,contentDetails',
+        id = channel_id
+    )
+    channels = request.execute().get('items')
+
+    # Validate reponse
+    if not channels:
+        return {'error': 'Channel not found'}
+    
+    # Check if any fo the founc channels are the one we are looking for
+    item = None
+    for channel in channels:
+        if channel['id'] == channel_id:
+            item = channel
+            break
+
+    # insert item into db
+    result = get_db().channels_create(item)
+
+    return {'message': 'Channel added'}
 
 @app.route('/channels/{channel_id}', methods = ['DELETE'])
 def channels_remove(channel_id):
     result = get_db().channels_delete(channel_id)
-    return result
+    return {'message': 'Channel removed'}
 
 @app.route('/videos', methods = ['GET'])
 def videos_list():

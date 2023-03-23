@@ -43,7 +43,7 @@ class DynamoDB(YTGuesserDB):
         response = self._channels.get_item(
             Key={'id': channel_id}
         )
-        return response['Item']
+        return response.get('Item', None)
 
     def channels_create(self, channel_info):
         response = self._channels.put_item(

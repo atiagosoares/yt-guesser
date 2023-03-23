@@ -7,7 +7,8 @@
       "environment_variables": {
         "CHANNELS_TABLE_NAME": "yt-guesser-dev-channels",
         "VIDEOS_TABLE_NAME": "yt-guesser-dev-videos",
-        "TRANSCRIPTS_TABLE_NAME": "yt-guesser-dev-transcripts"
+        "TRANSCRIPTS_TABLE_NAME": "yt-guesser-dev-transcripts",
+        "GOOGLE_TOKEN_PARAMETER_NAME": "yt-guesser-dev-google-token"
       }
     }
   }
