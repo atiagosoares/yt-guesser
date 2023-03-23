@@ -2,6 +2,7 @@ variable "PROJECT" {
   type = string
   default = "yt-guesser"
 }
+
 variable "ENV" {
   type = string
   default = "dev"
@@ -160,108 +161,4 @@ resource "aws_lambda_function" "do_everything" {
       PHRASES_TABLE_NAME = aws_dynamodb_table.phrases_table.name
     }
   }
-}
-
-# API
-resource "aws_api_gateway_rest_api" "guesser_api" {
-  name = "${var.PROJECT}-${var.ENV}-api"
-}
-
-# /videos 
-resource "aws_api_gateway_resource" "videos" {
-  parent_id   = aws_api_gateway_rest_api.guesser_api.root_resource_id
-  path_part   = "videos"
-  rest_api_id = aws_api_gateway_rest_api.guesser_api.id
-}
-
-resource "aws_api_gateway_method" "videos_get" {
-  authorization = "NONE"
-  http_method   = "GET"
-  resource_id   = aws_api_gateway_resource.videos.id
-  rest_api_id   = aws_api_gateway_rest_api.guesser_api.id
-}
-
-data "aws_iam_policy_document" "videos_get_backend" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "dynamodb:GetItem",
-      "dynamodb:Query",
-      "dynamodb:Scan"
-    ]
-    resources = [
-      aws_dynamodb_table.videos_table.arn,
-      aws_dynamodb_table.phrases_table.arn
-    ]
-  }
-}
-
-resource "aws_iam_role" "videos_get_backend_role" {
-  name               = "${var.PROJECT}-${var.ENV}-videos-get-backend-role"
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
-  inline_policy {
-    name = "lambda"
-    policy = data.aws_iam_policy_document.videos_get_backend.json
-  }
-}
-
-data "archive_file" "videos_get_backend_package" {
-  type        = "zip"
-  source_dir = "build/videos_get"
-  output_path = "build/videos_get.zip"
-}
-
-resource "aws_lambda_function" "videos_get_backend" {
-  # If the file is not in the current working directory you will need to include a
-  # path.module in the filename.
-  filename      = data.archive_file.videos_get_backend_package.output_path 
-  function_name = "${var.PROJECT}-${var.ENV}-videos-get"
-  role          = aws_iam_role.videos_get_backend_role.arn
-  handler       = "main.handler"
-  source_code_hash = data.archive_file.videos_get_backend_package.output_base64sha256
-  runtime = "python3.9"
-  memory_size = 2048
-  timeout = 300
-  environment {
-    variables = {
-      VIDEOS_TABLE_NAME = aws_dynamodb_table.videos_table.name
-      PHRASES_TABLE_NAME = aws_dynamodb_table.phrases_table.name
-    }
-  }
-}
-
-resource "aws_api_gateway_integration" "videos_get_mock" {
-  http_method = aws_api_gateway_method.videos_get.http_method
-  resource_id = aws_api_gateway_resource.videos.id
-  rest_api_id = aws_api_gateway_rest_api.guesser_api.id
-  type        = "MOCK"
-}
-
-resource "aws_api_gateway_deployment" "api_deployment" {
-  rest_api_id = aws_api_gateway_rest_api.guesser_api.id
-
-  triggers = {
-    # NOTE: The configuration below will satisfy ordering considerations,
-    #       but not pick up all future REST API changes. More advanced patterns
-    #       are possible, such as using the filesha1() function against the
-    #       Terraform configuration file(s) or removing the .id references to
-    #       calculate a hash against whole resources. Be aware that using whole
-    #       resources will show a difference after the initial implementation.
-    #       It will stabilize to only change when resources change afterwards.
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.videos.id,
-      aws_api_gateway_method.videos_get.id,
-      aws_api_gateway_integration.videos_get_mock.id,
-    ]))
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_api_gateway_stage" "default_stage" {
-  deployment_id = aws_api_gateway_deployment.api_deployment.id
-  rest_api_id   = aws_api_gateway_rest_api.guesser_api.id
-  stage_name    = "v1"
 }
