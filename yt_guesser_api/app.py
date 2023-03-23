@@ -3,9 +3,18 @@ from chalice import Chalice
 app = Chalice(app_name='yt_guesser_api')
 
 
-@app.route('/')
-def index():
+@app.route('/channels/{channel_id}')
+def channels():
     return {'hello': 'world'}
+
+@app.route('/videos/{video_id}')
+def videos():
+    return {'hello': 'world'}
+
+@app.rout('/videos/{videos_id}/transcript')
+def video_transcript():
+    return {'hello': 'world'}
+
 
 
 # The view function above will return {"hello": "world"}
