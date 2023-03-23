@@ -207,8 +207,8 @@ resource "aws_iam_role" "videos_get_backend_role" {
 
 data "archive_file" "videos_get_backend_package" {
   type        = "zip"
-  source_dir = "build/videos_get_backend"
-  output_path = "build/videos_get_backend.zip"
+  source_dir = "build/videos_get"
+  output_path = "build/videos_get.zip"
 }
 
 resource "aws_lambda_function" "videos_get_backend" {
@@ -217,7 +217,7 @@ resource "aws_lambda_function" "videos_get_backend" {
   filename      = data.archive_file.videos_get_backend_package.output_path 
   function_name = "${var.PROJECT}-${var.ENV}-videos-get"
   role          = aws_iam_role.videos_get_backend_role.arn
-  handler       = "main.hander"
+  handler       = "main.handler"
   source_code_hash = data.archive_file.videos_get_backend_package.output_base64sha256
   runtime = "python3.9"
   memory_size = 2048
