@@ -1,7 +1,7 @@
 import os
 import json
 
-from chalice import Chalice, NotFoundError
+from chalice import Chalice, NotFoundError, ConflictError, BadRequestError
 from chalicelib import db
 import boto3
 
@@ -10,7 +10,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+from youtube_transcript_api import YouTubeTranscriptApi
+
 GOOGLE_TOKEN_PARAMETER_NAME = os.environ.get('GOOGLE_TOKEN_PARAMETER_NAME')
+TRANSCRIPTS_BUCKET = os.environ.get('TRANSCRIPTS_BUCKET')
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 
 _DB = None
@@ -51,7 +54,7 @@ def get_parameter_value(parameter_name):
 
 
 # -------------- API --------------
-app = Chalice(app_name='yt_guesser_api')
+app = Chalice(app_name='app')
 
 @app.route('/channels', methods = ['GET'])
 def channels_list():
@@ -72,7 +75,7 @@ def channels_add():
     channel_id = app.current_request.json_body['id']
     # Check if channel aready exists
     if get_db().channels_get(channel_id):
-        return {'error': 'Channel already exists'}
+        raise ConflictError('Channel already exists')
 
     # Search for this channel in the youtubde data api
     request = get_yt().channels().list(
@@ -86,14 +89,14 @@ def channels_add():
         return {'error': 'Channel not found'}
     
     # Check if any fo the founc channels are the one we are looking for
-    item = None
+    target_channel = None
     for channel in channels:
         if channel['id'] == channel_id:
-            item = channel
+            target_channel = channel
             break
 
     # insert item into db
-    result = get_db().channels_create(item)
+    result = get_db().channels_create(target_channel)
 
     return {'message': 'Channel added'}
 
@@ -110,35 +113,86 @@ def videos_list():
 @app.route('/videos/{video_id}', methods = ['GET'])
 def videos_get(video_id):
     item = get_db().videos_get(video_id)
+    if not item:
+        raise NotFoundError('Video not found')
     return item
 
 @app.route('/transcripts', methods = ['GET'])
 def transcripts_list():
-    return {'action': 'You choose to list transcripts'} 
+    items = get_db().transcripts_list()
+    return items 
 
 @app.route('/transcripts/curate', methods = ['POST'])
 def transcripts_curate():
-    request = app.current_request
-    body = request.json_body
+    # Get the video id from the request body
+    video_id = app.current_request.json_body['video_id']
+    start = app.current_request.json_body['start']
+    # Submit curration
+    result = get_db().transcripts_curate(video_id, start)
 
-    return {'action': f'{type(body)}'}
+    if not result:
+        raise BadRequestError('Invalid request')
 
+    return {'message': 'Transcript curration submitted'}
 
-# The view function above will return {"hello": "world"}
-# whenever you make an HTTP GET request to '/'.
-#
-# Here are a few more examples:
-#
-# @app.route('/hello/{name}')
-# def hello_name(name):
-#    # '/hello/james' -> {"hello": "james"}
-#    return {'hello': name}
-#
-# @app.route('/users', methods=['POST'])
-# def create_user():
-#     # This is the JSON body the user sent in their POST request.
-#     user_as_json = app.current_request.json_body
-#     # We'll echo the json body back to the user in a 'user' key.
-#     return {'user': user_as_json}
-#
-# See the README documentation for more examples.
+# Fuction to pool for recently posted videos
+@app.schedule('rate(1 hour)')
+def search_videos(event):
+
+    # List all channels in the channels table
+    db = get_db()
+    channels = db.channels_list()
+
+    # Search recent videos for each channel in the list
+    items = []
+    for channel in channels:
+        search_results = _search_recent_videos(channel['id'])
+        # If the result is not null
+        if search_results:
+            for result in search_results:
+                if result['id']['kind'] == 'youtube#video':
+                    items.append(result)
+    
+    # Convert the search result items to expected video schema
+    videos = [_construct_video_object_from_search_result(item) for item in items]
+
+    # Download their transcripts
+    for video in videos:
+        _download_transcript(video['id'])
+    
+    # Insert the videos into the videos table
+    for video in videos:
+        db.videos_create(video)
+
+def _search_recent_videos(channel_id):
+    youtube = get_yt()
+    # This request fetches the 5 most recent videos
+    request = youtube.search().list(
+        part = 'id,snippet',
+        channelId = channel_id,
+        order = 'date'
+    )
+    search = request.execute()
+    return search.get('items')
+
+def _construct_video_object_from_search_result(sr):
+    #sr = search result
+    video = {
+        'id' : sr['id']['videoId'],
+        'channel_id': sr['snippet']['channelId'],
+        'published_at': sr['snippet']['publishedAt'],
+        'title': sr['snippet']['title']
+    }
+    return video
+
+# Download the video transcript and save it to s3 as json
+def _download_transcript(video_id):
+    transcript_json = YouTubeTranscriptApi.get_transcript(video_id)
+    obj = boto3.resource('s3').Object(TRANSCRIPTS_BUCKET, f'{video_id}.json')
+    result = True
+    try:
+        obj.put(Body = json.dumps(transcript_json))
+    except:
+        result = False
+
+    return result

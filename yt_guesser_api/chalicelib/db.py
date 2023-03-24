@@ -6,7 +6,7 @@ class YTGuesserDB(object):
     def channels_list(self):
         pass
 
-    def channels_get(self, channel_id):
+    def channels_create(self, channel_id):
         pass
 
     def channels_add(self, uid):
@@ -20,6 +20,9 @@ class YTGuesserDB(object):
         pass
 
     def videos_get(self, uid):
+        pass
+
+    def videos_create(self, video):
         pass
 
     def transcripts_list():

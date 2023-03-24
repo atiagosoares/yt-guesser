@@ -34,24 +34,17 @@ def main():
     youtube = build('youtube', 'v3', credentials=creds)
 
 
-    # Load the channel list
-    with open('channel-list.txt') as f:
-        channel_list = f.readlines()
-    # Filter out comments
-    channel_list = [channel_id.split('#')[0].strip() for channel_id in channel_list]
-    print(channel_list)
-
     # Get sample channels
-    request = youtube.channels().list(
-        part='id,snippet,contentDetails,statistics',
-        # id = 'UCLtREJY21xRfCuEKvdki1Kw,UCHnyfMqiRRG1u-2MsSQLbXA,UCXuqSBlHAE6Xw-yeJA0Tunw,UCpB959t8iPrxQWj7G6n0ctQ,UCBJycsmduvYEL83R_U4JriQ,UCtMVHI3AJD4Qk4hcbZnI9ZQ,UCkWQ0gDrqOCarmUKmppD7GQ,UCm22FAXZMw1BaWeFszZxUKw,UCmDTrq0LNgPodDOFZiSbsww,UCUK0HBIBWgM2c4vsPhkYY4w,UChIs72whgZI9w6d6FhwGGHA'
-        id = 'ia;sldkfja;sldkjfA'
+    request = youtube.search().list(
+        part='id,snippet',
+        channelId = 'UCyUBW72KU30dfAYWLVNZO8Q',
+        order = 'date'
     )
-    channels = request.execute()
+    search =  request.execute()
 
     # Saving results
-    with open('data/channels_sample.json', 'w') as f:
-        json.dump(channels, f, indent=4)
+    with open('data/search_sample.json', 'w') as f:
+        json.dump(search, f, indent=4)
 
 
 def print_videos(videos: list):
