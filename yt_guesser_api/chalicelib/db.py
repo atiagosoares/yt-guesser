@@ -25,7 +25,13 @@ class YTGuesserDB(object):
     def videos_create(self, video):
         pass
 
-    def transcripts_list():
+    def transcripts_list(video_id, start = None, end = None, curated = None):
+        pass
+
+    def transcripts_get(video_id, start):
+        pass
+
+    def transcripts_create(transcript):
         pass
 
     def transcripts_curate():
@@ -82,14 +88,31 @@ class DynamoDB(YTGuesserDB):
         )
         return True
 
-    def transcripts_list(self, video_id, curated = None):
+    def transcripts_list(self, video_id, start = None, end = None, curated = None):
+
         key_condition_expression = Key('video_id').eq(video_id)
+        if start:
+            key_condition_expression = key_condition_expression & Key('start').gte(start)
+        if end:
+            key_condition_expression = key_condition_expression & Key('start').lt(end)
         if curated:
             key_condition_expression = key_condition_expression & Key('curated').eq(curated)
         response = self._transcripts.query(
             KeyConditionExpression=key_condition_expression
         )
         return response['Items']
+    
+    def transcripts_get(self, video_id, start):
+        response = self._transcripts.get_item(
+            Key={'video_id': video_id, 'start': start}
+        )
+        return response['Item']
+    
+    def transcripts_create(self, transcript):
+        response = self._transcripts.put_item(
+            Item=transcript
+        )
+        return True
 
     def transcripts_curate(self, video_id, start):
         response = self._transcripts.update_item(
