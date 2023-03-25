@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import CouldNotRetrieveTranscript
 
 GOOGLE_TOKEN_PARAMETER_NAME = os.environ.get('GOOGLE_TOKEN_PARAMETER_NAME')
 TRANSCRIPTS_BUCKET = os.environ.get('TRANSCRIPTS_BUCKET')
@@ -158,7 +159,8 @@ def search_videos(event):
 
     # Download their transcripts
     for video in videos:
-        _download_transcript(video['id'])
+        result = _download_transcript(video['id'])
+        video['transcript_available'] = result
     
     # Insert the videos into the videos table
     for video in videos:
@@ -187,12 +189,18 @@ def _construct_video_object_from_search_result(sr):
 
 # Download the video transcript and save it to s3 as json
 def _download_transcript(video_id):
-    transcript_json = YouTubeTranscriptApi.get_transcript(video_id)
-    obj = boto3.resource('s3').Object(TRANSCRIPTS_BUCKET, f'{video_id}.json')
-    result = True
     try:
-        obj.put(Body = json.dumps(transcript_json))
-    except:
-        result = False
+        transcript_json = YouTubeTranscriptApi.get_transcript(video_id)
+    except CouldNotRetrieveTranscript as e:
+        print(e)
+        return False
 
-    return result
+    try:
+        s3 = boto3.resource('s3') 
+        obj = s3.Object(TRANSCRIPTS_BUCKET, f'{video_id}.json')
+        obj.put(Body = json.dumps(transcript_json))
+        return True
+    except Exception as e:
+        print('Could not upload transcript to s3')
+        print(e)
+        return False

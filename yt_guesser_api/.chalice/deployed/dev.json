@@ -7,6 +7,16 @@
       "role_name": "yt_guesser_api-dev"
     },
     {
+      "name": "search_videos",
+      "resource_type": "lambda_function",
+      "lambda_arn": "arn:aws:lambda:us-east-1:358737600086:function:yt_guesser_api-dev-search_videos"
+    },
+    {
+      "name": "search_videos-event",
+      "resource_type": "cloudwatch_event",
+      "rule_name": "yt_guesser_api-dev-search_videos-event"
+    },
+    {
       "name": "api_handler",
       "resource_type": "lambda_function",
       "lambda_arn": "arn:aws:lambda:us-east-1:358737600086:function:yt_guesser_api-dev"

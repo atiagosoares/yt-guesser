@@ -75,6 +75,12 @@ class DynamoDB(YTGuesserDB):
             Key={'id': video_id}
         )
         return response['Item']
+    
+    def videos_create(self, video):
+        response = self._videos.put_item(
+            Item=video
+        )
+        return True
 
     def transcripts_list(self, video_id, curated = None):
         key_condition_expression = Key('video_id').eq(video_id)
