@@ -35,7 +35,7 @@ def get_yt():
     global _YT
     if not _YT:
         authorized_user_info = json.loads(
-            get_parameter_value(GOOGLE_TOKEN_PARAMETER_NAME)
+            _get_parameter_value(GOOGLE_TOKEN_PARAMETER_NAME)
         )
         creds = Credentials.from_authorized_user_info(
             authorized_user_info,
@@ -44,14 +44,27 @@ def get_yt():
         # If there are no (valid) credentials available, let the user log in.
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+            # Save the refreshed credentials to ssm
+            _update_parameter_value(GOOGLE_TOKEN_PARAMETER_NAME, creds.to_json())
+
         _YT = build('youtube', 'v3', credentials=creds)
     return _YT
 
-def get_parameter_value(parameter_name):
+def _get_parameter_value(parameter_name):
     session = boto3.session.Session()
     ssm = session.client('ssm')
     parameter = ssm.get_parameter(Name = parameter_name, WithDecryption = True)
     return parameter['Parameter']['Value']
+
+def _update_parameter_value(parameter_name, parameter_value):
+    session = boto3.session.Session()
+    ssm = session.client('ssm')
+    ssm.put_parameter(
+        Name = parameter_name,
+        Value = parameter_value,
+        Type = 'SecureString',
+        Overwrite = True
+    )
 
 
 # -------------- API --------------
