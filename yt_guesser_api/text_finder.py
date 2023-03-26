@@ -1,5 +1,5 @@
 class TextFinder():
-    def __init__():
+    def __init__(self):
         pass
 
     def find_text(self, s, text):
@@ -12,6 +12,7 @@ class TextFinder():
         
         while signature_len >= 1 and signature_len <= len(s):
             signature = self._gen_signature(s)
+            print(signature)
             matching_positions = self._search_signature(signature, text)
 
             # simple case: only one match
@@ -50,6 +51,11 @@ class TextFinder():
         '''
         positions = []
         for i in range(len(text)):
+            
+            # Igoree non-alphanumeric characters
+            if not text[i].isalnum():
+                continue
+
             pos_signature = self._gen_signature(text[i:], len(signature))
             if pos_signature == signature:
                 positions.append(i)
