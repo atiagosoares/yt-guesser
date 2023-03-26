@@ -9,18 +9,18 @@ from .prompts import BasePrompt
 class TranscriptEnricher():
 
     def __init__(self):
-        self.transcript = transcript
+        pass
     
     def enrich(self, transcript):
         pass
 
 class OpenAPIChatEnricher(TranscriptEnricher):
 
-    def __init__(self, transcript, api_key, model = "gpt-3.5-turbo"):
-        self.transcript = transcript
+    def __init__(self, api_key, text_finder, model = "gpt-3.5-turbo"):
         self.api_key = api_key
         self.base_prompt = BasePrompt
         self.model = model 
+        self.text_finder = text_finder
 
     def enrich(self, transcript):
 
@@ -74,12 +74,12 @@ class OpenAPIChatEnricher(TranscriptEnricher):
             'Authorization': 'Bearer ' + self.api_key
         }
         messages = [
-            {'role': 'user', 'content': self + prompt}
+            {'role': 'user', 'content': self + text}
         ]
         body = {
-            "model": model,
+            "model": self.model,
             "messages": messages,
-            "temperature": temperature
+            "temperature": 0
         }
 
         # Exponential backoff request
