@@ -149,6 +149,7 @@ def transcripts_curate():
 
     return {'message': 'Transcript curration submitted'}
 
+# -------------- BACKGROUND TASKS --------------
 # Fuction to pool for recently posted videos
 @app.schedule('rate(1 hour)')
 def search_videos(event):
@@ -240,7 +241,8 @@ def process_transcript(event):
         db.transcripts_create(transcript_object)
 
 def _enrich_transcript(transcript):
-    #TODO: implement
+    # Concatenate all the text to a single string
+    text = '\n'.join([item['text'] for item in transcript])
     pass
 
 def _create_transcript_objects_from_transcript(transcript, video_id):
