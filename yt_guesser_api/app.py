@@ -3,6 +3,7 @@ import json
 
 from chalice import Chalice, NotFoundError, ConflictError, BadRequestError
 from chalicelib import db
+from chalicelib.enricher import OpenAPIChatEnricher
 import boto3
 
 from google.auth.transport.requests import Request
@@ -12,8 +13,6 @@ from googleapiclient.discovery import build
 
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api import CouldNotRetrieveTranscript
-
-from enricher import OpenAPIChatEnricher
  
 GOOGLE_TOKEN_PARAMETER_NAME = os.environ.get('GOOGLE_TOKEN_PARAMETER_NAME')
 OPENAI_API_KEY_PARAMETER_NAME = os.environ.get('OPENAI_APII_KEY_PARAMETER_NAME')

@@ -3,7 +3,7 @@ import json
 from nltk.tokenize import word_tokenize
 import requests
 import time
-from helpers import ApproximateMap, TextFinder
+from chalicelib.helpers import ApproximateMap, TextFinder
 
 from .prompts import BasePrompt
 
