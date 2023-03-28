@@ -61,3 +61,51 @@ class TextFinder():
                 positions.append(i)
 
         return positions
+
+class ApproximateMap():
+    def __init__(self, inital_values = None):
+        self.values = []
+        # Initial values should be a list of tuples
+        if inital_values:
+            for value in inital_values:
+                self.add(value)
+    
+    def add(self, key, value):
+        '''
+        Adds a value to the map
+        '''
+
+        self.values.append((key, value))
+        self.values.sort(key=lambda x: x[0])
+    
+    def get_lt(self, key: int):
+        '''
+        Returns the greatest value that is less than key
+        '''
+        for value in reversed(self.values):
+            if value[0] < key:
+                return value[1]
+    
+    def get_gt(self, key: int):
+        '''
+        Returns the least value that is greater than key
+        '''
+        for value in self.values:
+            if value[0] > key:
+                return value[1]
+    
+    def get_lteq(self, key: int):
+        '''
+        Returns the greatest value that is less than or equal to key
+        '''
+        for value in reversed(self.values):
+            if value[0] <= key:
+                return value[1]
+    
+    def get_gteq(self, key: int):
+        '''
+        Returns the least value that is greater than or equal to key
+        '''
+        for value in self.values:
+            if value[0] >= key:
+                return value[1]

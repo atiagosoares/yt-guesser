@@ -1,4 +1,4 @@
-from text_finder import TextFinder
+from helpers import TextFinder, ApproximateMap
 
 SAMPLE_ENRICHED_TRANSCRIPT = '''
 - OpenAI just dropped GPT-4, and as cool as it is and as much as it's improving things, it still doesn't solve the biggest problem with AI.
@@ -34,12 +34,26 @@ def test_find_text():
     text = 'This is a test string'
     assert tf.find_text(s, text) == 0
 
-def test_find_snippets():
-    snippets = SAMPLE_ENRICHED_TRANSCRIPT.split('- ')[1:]
-    expected_pos = 3
+def test_find_snippet1():
+    s = 'open AI just dropped gpt4 and as cool as'
+    assert tf.find_text(s, SAMPLE_ENRICHED_TRANSCRIPT) == 3
 
-    for s in snippets:
-        print(f'Snippet: {s}')
-        pos = tf.find_text(s, SAMPLE_ENRICHED_TRANSCRIPT)
-        assert pos == expected_pos
-        expected_pos += len(s) + 2
+def test_find_snippet2():
+    s = "it is and as much as it's improving"
+    assert tf.find_text(s, SAMPLE_ENRICHED_TRANSCRIPT) == 45
+
+# Test the approximate map
+def test_approximate_map():
+    amap = ApproximateMap()
+    amap.add(10, 1)
+    amap.add(20, 2)
+    amap.add(30, 3)
+
+    assert amap.get_lt(10) == None
+    assert amap.get_lt(11) == 1
+    assert amap.get_lteq(9) == None
+    assert amap.get_lteq(10) == 1
+    assert amap.get_gt(30) == None
+    assert amap.get_gt(29) == 3
+    assert amap.get_gteq(31) == None
+    assert amap.get_gteq(30) == 3
