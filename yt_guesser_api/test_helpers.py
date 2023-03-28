@@ -47,13 +47,13 @@ def test_approximate_map():
     amap = ApproximateMap()
     amap.add(10, 1)
     amap.add(20, 2)
-    amap.add(30, 3)
+    amap.add(29.9, 3.1)
 
     assert amap.get_lt(10) == None
-    assert amap.get_lt(11) == 1
+    assert amap.get_lt(11) == (10, 1)
     assert amap.get_lteq(9) == None
-    assert amap.get_lteq(10) == 1
+    assert amap.get_lteq(10) == (10, 1) 
     assert amap.get_gt(30) == None
-    assert amap.get_gt(29) == 3
+    assert amap.get_gt(29) == (29.9, 3.1) 
     assert amap.get_gteq(31) == None
-    assert amap.get_gteq(30) == 3
+    assert amap.get_gteq(29.9) == (29.9, 3.1)

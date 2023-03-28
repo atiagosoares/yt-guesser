@@ -78,34 +78,34 @@ class ApproximateMap():
         self.values.append((key, value))
         self.values.sort(key=lambda x: x[0])
     
-    def get_lt(self, key: int):
+    def get_lt(self, key):
         '''
         Returns the greatest value that is less than key
         '''
         for value in reversed(self.values):
             if value[0] < key:
-                return value[1]
+                return value
     
-    def get_gt(self, key: int):
+    def get_gt(self, key):
         '''
         Returns the least value that is greater than key
         '''
         for value in self.values:
             if value[0] > key:
-                return value[1]
+                return value
     
-    def get_lteq(self, key: int):
+    def get_lteq(self, key):
         '''
         Returns the greatest value that is less than or equal to key
         '''
         for value in reversed(self.values):
             if value[0] <= key:
-                return value[1]
+                return value
     
-    def get_gteq(self, key: int):
+    def get_gteq(self, key):
         '''
         Returns the least value that is greater than or equal to key
         '''
         for value in self.values:
             if value[0] >= key:
-                return value[1]
+                return value

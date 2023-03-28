@@ -13,7 +13,10 @@ from googleapiclient.discovery import build
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api import CouldNotRetrieveTranscript
 
+from enricher import OpenAPIChatEnricher
+ 
 GOOGLE_TOKEN_PARAMETER_NAME = os.environ.get('GOOGLE_TOKEN_PARAMETER_NAME')
+OPENAI_API_KEY_PARAMETER_NAME = os.environ.get('OPENAI_APII_KEY_PARAMETER_NAME')
 TRANSCRIPTS_BUCKET = os.environ.get('TRANSCRIPTS_BUCKET')
 SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
 
@@ -229,8 +232,11 @@ def process_transcript(event):
     obj = s3.Object(TRANSCRIPTS_BUCKET, event.key)
     transcript = json.loads(obj.get()['Body'].read().decode('utf-8'))
     
-    # process the transcript
-    enriched_transcript = _enrich_transcript(transcript)
+    # Load openai api key
+    api_key = _get_parameter_value('OPENAI_API_KEY_PARAMETER_NAME')
+    # Build enricher object
+    enricher = OpenAPIChatEnricher(api_key)
+    enriched_transcript = enricher.enrich(transcript)
 
     # Create transcript objects
     transcript_objects = _create_transcript_objects_from_transcript(enriched_transcript, video_id)

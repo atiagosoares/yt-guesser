@@ -3,6 +3,7 @@ import json
 from nltk.tokenize import word_tokenize
 import requests
 import time
+from helpers import ApproximateMap, TextFinder
 
 from .prompts import BasePrompt
 
@@ -16,11 +17,10 @@ class TranscriptEnricher():
 
 class OpenAPIChatEnricher(TranscriptEnricher):
 
-    def __init__(self, api_key, text_finder, model = "gpt-3.5-turbo"):
+    def __init__(self, api_key, model = "gpt-3.5-turbo"):
         self.api_key = api_key
         self.base_prompt = BasePrompt
-        self.model = model 
-        self.text_finder = text_finder
+        self.model = model
 
     def enrich(self, transcript):
 
@@ -43,17 +43,16 @@ class OpenAPIChatEnricher(TranscriptEnricher):
         # Find the positon for the transcript entries
         transcript_positions = self._find_transcript_positions(enriched_wall, transcript)
         # Create map of position -> timestamp
-        position_timestamps = {}
+        position_timestamps = ApproximateMap()
         for pos, ts in zip(transcript_positions, [item['timestamp'] for item in transcript]):
-            # Exlude cases where the timestamp is None
-
-        # Filter out the positions that don't have a position or timestamp
-        position_timestamps = [item for item in position_timestamps if item[0] and item[1]]
-        # Make sure positions are in order
-        position_timestamps.sort(key = lambda item: item[0])
+            # Exlude cases where the position is None
+            if pos:
+                position_timestamps.add(pos, ts)
 
         # Recompose the enriched wall into a transcript
         enriched_transcript = self._recompose_transcript(enriched_wall, position_timestamps)
+
+        return enriched_transcript
 
 
     def _concat_transcript(self, transcript):
@@ -130,7 +129,7 @@ class OpenAPIChatEnricher(TranscriptEnricher):
         '''
         positions = []
         for item in transcript:
-            positions.append(self.text_finder.find_text(wall, item['text']))
+            positions.append(TextFinder().find_text(wall, item['text']))
         return positions
     
     def _recompose_transcript(self, wall, position_timestamps, start_safe_margin_ms = 1500):
@@ -138,48 +137,33 @@ class OpenAPIChatEnricher(TranscriptEnricher):
         Recomposes the enriched wall into a transcript
         '''
 
-        lower_idx = 0
-        upper_idx = 1
-
-        lower_pos, lower_ts = position_timestamps[lower_idx]
-        upper_pos, upper_ts = position_timestamps[upper_idx]
-
         enriched_transcript = []
         entries = wall.splitlines()
+
         entry_pos = 0
+        lower_bound = position_timestamps.get_lteq(entry_pos)
+        upper_bound = position_timestamps.get_gt(entry_pos)
+    
         for entry in entries:
             t_entry = {
                 'text': entry
             }
-
-            # Interpoloate the start timestamp
-            if entry_pos >= upper_pos:
-                while upper_pos <= entry_pos or upper_pos is None:
-                    upper_idx += 1
-                    upper_pos, upper_ts = position_timestamps[upper_idx]
-
-            start_estimate = self.interpolate_value(lower_pos, upper_pos, lower_ts, upper_ts, entry_pos)
-            t_entry['start'] = start_estimate - start_safe_margin_ms
+            
+            # Update bounds
+            if entry_pos >= upper_bound[0]:
+                lower_bound = upper_bound
+                upper_bound = position_timestamps.get_gteq(entry_pos)
+            # Interpolate the start timestamp
+            start_estimate = self.interpolate_value(lower_bound[0], upper_bound[0], lower_bound[1], upper_bound[1], entry_pos)
+            t_entry['start'] = int(start_estimate*1000) - start_safe_margin_ms
 
             # Interpolate the end timestamp
-            if entry_pos + len(entry) >= upper_pos:
-            entry_pos += len(entry)
-
+            if entry_pos + len(entry) >= upper_bound[0]:
+                entry_pos += len(entry)
 
         return enriched_transcript
     
-    def _find_position_bounds(position, position_timestamps, init_idx = 0):
-        '''
-        Find the lower and upper bounds of a position in a list of position_timestamps
-
-        We can assume that
-        - the position_timestamps array is sorted by position AND timestamp
-        - There are no null values
-        '''
-
-
-    
-def interpolate_value(self, a, c, fa, fc, b):
+def interpolate_value(a, c, fa, fc, b):
     '''
     Interpolates a value between two timestamps
     '''
