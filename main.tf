@@ -8,6 +8,11 @@ variable "ENV" {
   default = "dev"
 }
 
+variable "OPENAI_API_KEY" {
+  type = string
+  sensitive = true
+}
+
 terraform {
   backend "s3" {
     bucket = "terraform-45370"
@@ -16,21 +21,26 @@ terraform {
   }
 }
 
+# ================= PARAMTERS =================
 resource "aws_ssm_parameter" "google_token" {
   name  = "${var.PROJECT}-${var.ENV}-google-token"
   type  = "SecureString"
   value = file("token.json") 
 }
 
-resource "aws_s3_bucket" "channel_list_bucket" {
-  bucket = "${var.PROJECT}-${var.ENV}-channel-list"
+resource "aws_ssm_parameter" "openai_api_key" {
+  name  = "${var.PROJECT}-${var.ENV}-openai-api-key"
+  type  = "SecureString"
+  value = var.OPENAI_API_KEY
 }
+
+# ================= S3 BUCKETS =================
 
 resource "aws_s3_bucket" "original_transcripts" {
   bucket = "${var.PROJECT}-${var.ENV}-transcripts"
 }
 
-# Database
+# ================= Database =================
 # - Channels
 resource "aws_dynamodb_table" "channels_table" {
   name           = "${var.PROJECT}-${var.ENV}-channels"
@@ -85,5 +95,151 @@ resource "aws_dynamodb_table" "transcripts_table" {
   attribute {
     name = "start"
     type = "N"
+  }
+}
+
+# ================= IAM =================
+# - Basic policies for lamba
+# Assume role
+data "aws_iam_policy_document" "lambda_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+# Basic execution policy
+data "aws_iam_policy_document" "lambda_basic_execution_policy_doc" {
+  statement {
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+
+    resources = ["*"]
+  }
+}
+resource "aws_iam_policy" "lambda_basic_execution_policy" {
+  name   = "lambda_basic_execution_policy"
+  policy = data.aws_iam_policy_document.lambda_basic_execution_policy_doc.json
+}
+# DB Access
+data "aws_iam_policy_document" "lambda_dynamodb_access_policy_doc" {
+  statement {
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:GetItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+      "dynamodb:BatchGetItem",
+      "dynamodb:BatchWriteItem",
+    ]
+
+    resources = [
+      aws_dynamodb_table.channels_table.arn,
+      "${aws_dynamodb_table.channels_table.arn}/*",
+      aws_dynamodb_table.videos_table.arn,
+      "${aws_dynamodb_table.videos_table.arn}/*",
+      aws_dynamodb_table.transcripts_table.arn,
+      "${aws_dynamodb_table.transcripts_table.arn}/*",
+    ]
+  }
+}
+resource "aws_iam_policy" "lambda_dynamodb_access_policy" {
+  name   = "lambda_dynamodb_access_policy"
+  policy = data.aws_iam_policy_document.lambda_dynamodb_access_policy_doc.json
+}
+
+# Transcript bucket access
+data "aws_iam_policy_document" "lambda_s3transcripts_acccess_policy_doc" {
+  statement {
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      aws_s3_bucket.original_transcripts.arn,
+      "${aws_s3_bucket.original_transcripts.arn}/*",
+    ]
+  }
+}
+resource "aws_iam_policy" "lambda_s3transcripts_acccess_policy" {
+  name   = "lambda_s3transcripts_acccess_policy"
+  policy = data.aws_iam_policy_document.lambda_s3transcripts_acccess_policy_doc.json
+}
+
+# YT Data API Access
+data "aws_iam_policy_document" "lambda_ytdata_access_policy_doc" {
+  statement {
+    actions = [
+      "ssm:GetParameter",
+    ]
+    resources = [
+      aws_ssm_parameter.google_token.arn,
+    ]
+  }
+}
+resource "aws_iam_policy" "lambda_ytdata_access_policy" {
+  name   = "lambda_ytdata_access_policy"
+  policy = data.aws_iam_policy_document.lambda_ytdata_access_policy_doc.json
+}
+
+# OpenAI API Access
+data "aws_iam_policy_document" "lambda_openai_access_policy_doc" {
+  statement {
+    actions = [
+      "ssm:GetParameter",
+    ]
+    resources = [
+      aws_ssm_parameter.openai_api_key.arn,
+    ]
+  }
+}
+data "aws_iam_policy" "lambda_openai_access_policy" {
+  name   = "lambda_openai_access_policy"
+  policy = data.aws_iam_policy_document.lambda_openai_access_policy_doc.json
+}
+
+# ================= Lambda =================
+# - Transcript Processor
+# Role
+resource "aws_iam_role" "transcript_processor_role" {
+  name               = "${var.PROJECT}-${var.ENV}-transcript-processor-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy.json
+  managed_policy_arns = [
+    aws_iam_policy.lambda_basic_execution_policy.arn,
+    aws_iam_policy.lambda_dynamodb_access_policy.arn,
+    aws_iam_policy.lambda_s3transcripts_acccess_policy.arn
+    aws_iam_policy.lambda_openai_access_policy.arn,
+  ]
+}
+data "archive_file" "process_transcripts" {
+  type        = "zip"
+  source_dir  = "build/process_transcripts"
+  output_path = "build/process_transcripts.zip"
+}
+resource "aws_lambda_function" "transcript_processor" {
+  function_name = "${var.PROJECT}-${var.ENV}-process-transcripts"
+  role          = aws_iam_role.transcript_processor_role.arn
+  handler       = "main.handler"
+  runtime       = "python3.9"
+  filename      = data.archive_file.process_transcripts.output_path
+  source_code_hash = data.archive_file.process_transcripts.output_base64sha256
+  timeout       = 900
+  memory_size   = 512
+
+  environment {
+    variables = {
+      CHANNELS_TABLE = aws_dynamodb_table.channels_table.name
+      VIDEOS_TABLE = aws_dynamodb_table.videos_table.name
+      TRANSCRIPTS_TABLE = aws_dynamodb_table.transcripts_table.name\
+      OPENAI_API_KEY_PARAMETER_NAME = "${var.PROJECT}-${var.ENV}-openai-api-key"
+    }
   }
 }
