@@ -107,7 +107,7 @@ data "aws_iam_policy_document" "lambda_assume_role_policy" {
 
     principals {
       type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
+      identifiers = ["lambda.amazonaws.com"]
     }
   }
 }
@@ -201,7 +201,7 @@ data "aws_iam_policy_document" "lambda_openai_access_policy_doc" {
     ]
   }
 }
-data "aws_iam_policy" "lambda_openai_access_policy" {
+resource "aws_iam_policy" "lambda_openai_access_policy" {
   name   = "lambda_openai_access_policy"
   policy = data.aws_iam_policy_document.lambda_openai_access_policy_doc.json
 }
@@ -215,7 +215,7 @@ resource "aws_iam_role" "transcript_processor_role" {
   managed_policy_arns = [
     aws_iam_policy.lambda_basic_execution_policy.arn,
     aws_iam_policy.lambda_dynamodb_access_policy.arn,
-    aws_iam_policy.lambda_s3transcripts_acccess_policy.arn
+    aws_iam_policy.lambda_s3transcripts_acccess_policy.arn,
     aws_iam_policy.lambda_openai_access_policy.arn,
   ]
 }
@@ -238,7 +238,7 @@ resource "aws_lambda_function" "transcript_processor" {
     variables = {
       CHANNELS_TABLE = aws_dynamodb_table.channels_table.name
       VIDEOS_TABLE = aws_dynamodb_table.videos_table.name
-      TRANSCRIPTS_TABLE = aws_dynamodb_table.transcripts_table.name\
+      TRANSCRIPTS_TABLE = aws_dynamodb_table.transcripts_table.name
       OPENAI_API_KEY_PARAMETER_NAME = "${var.PROJECT}-${var.ENV}-openai-api-key"
     }
   }

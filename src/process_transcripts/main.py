@@ -16,7 +16,7 @@ def get_db():
         _DB = db.DynamoDB(channels_table, videos_table, transcripts_table)
     return _DB
 
-def hanler(event, contex):
+def handler(event, context):
 
     # Unpack s3 data
     event = json.loads(event['Records'][0]['body'])
