@@ -2,6 +2,7 @@ import boto3
 import os
 import json
 from enricher import OpenAIChatEnricher
+import db
 
 OPENAI_API_KEY_PARAMETER_NAME = os.environ.get('OPENAI_API_KEY_PARAMETER_NAME')
 
@@ -19,13 +20,13 @@ def get_db():
 def handler(event, context):
 
     # Unpack s3 data
-    event = json.loads(event['Records'][0]['body'])
+    s3_event = event['Records'][0]['s3']
 
     # Get the video id from the event
-    video_id = event.key.split('.')[0]
+    video_id = s3_event['object']['key'].split('.')[0]
     # Get the transcript from s3
     s3 = boto3.resource('s3')
-    obj = s3.Object(TRANSCRIPTS_BUCKET, event.key)
+    obj = s3.Object(s3_event['bucket']['name'], event.key)
     transcript = json.loads(obj.get()['Body'].read().decode('utf-8'))
     
     # Load openai api key
