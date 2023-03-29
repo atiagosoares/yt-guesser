@@ -1,4 +1,4 @@
-from yt_guesser_api.chalicelib.helpers import TextFinder, ApproximateMap
+from src.process_transcript.helpers import TextFinder, ApproximateMap
 
 SAMPLE_ENRICHED_TRANSCRIPT = '''
 - OpenAI just dropped GPT-4, and as cool as it is and as much as it's improving things, it still doesn't solve the biggest problem with AI.

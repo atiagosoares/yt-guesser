@@ -3,7 +3,7 @@ import json
 from nltk.tokenize import word_tokenize
 import requests
 import time
-from chalicelib.helpers import ApproximateMap, TextFinder
+from helpers import ApproximateMap, TextFinder
 
 from .prompts import BasePrompt
 
@@ -15,7 +15,7 @@ class TranscriptEnricher():
     def enrich(self, transcript):
         pass
 
-class OpenAPIChatEnricher(TranscriptEnricher):
+class OpenAIChatEnricher(TranscriptEnricher):
 
     def __init__(self, api_key, model = "gpt-3.5-turbo"):
         self.api_key = api_key
