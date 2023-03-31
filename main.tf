@@ -219,18 +219,24 @@ resource "aws_iam_role" "transcript_processor_role" {
     aws_iam_policy.lambda_openai_access_policy.arn,
   ]
 }
-data "archive_file" "process_transcripts" {
-  type        = "zip"
-  source_dir  = "build/process_transcripts"
-  output_path = "build/process_transcripts.zip"
+resource "aws_ecr_repository" "transcript_processor_repo" {
+  name                 = "${var.PROJECT}-${var.ENV}-transcript-processor"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+data "aws_ecr_image" "transcript_processor_img" {
+  repository_name = aws_ecr_repository.transcript_processor.name
+  image_tag       = "latest"
 }
 resource "aws_lambda_function" "transcript_processor" {
   function_name = "${var.PROJECT}-${var.ENV}-process-transcripts"
   role          = aws_iam_role.transcript_processor_role.arn
   handler       = "main.handler"
   runtime       = "python3.9"
-  filename      = data.archive_file.process_transcripts.output_path
-  source_code_hash = data.archive_file.process_transcripts.output_base64sha256
+  image_uri     = "${aws_ecr_repository.transcript_processor_repo.repository_url}@${data.aws_ecr_image.transcript_processor_img.id}"
   timeout       = 900
   memory_size   = 512
 
