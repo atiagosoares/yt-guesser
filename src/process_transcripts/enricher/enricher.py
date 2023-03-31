@@ -64,7 +64,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
         '''
         wall = ''
         for item in transcript:
-            wall += item['text']
+            wall += item['text'] + ' '
         return wall
 
     def _chunck_wall(self, wall, chunk_size = 1500):
