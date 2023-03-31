@@ -1,6 +1,9 @@
 import os
 import json
+import nltk
 from nltk.tokenize import word_tokenize
+nltk.data.path.append("/tmp")
+nltk.download("punkt", download_dir="/tmp")
 import requests
 import time
 from helpers import ApproximateMap, TextFinder
