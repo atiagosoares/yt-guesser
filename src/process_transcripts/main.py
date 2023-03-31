@@ -26,7 +26,7 @@ def handler(event, context):
     video_id = s3_event['object']['key'].split('.')[0]
     # Get the transcript from s3
     s3 = boto3.resource('s3')
-    obj = s3.Object(s3_event['bucket']['name'], event['object']['key'])
+    obj = s3.Object(s3_event['bucket']['name'], s3_event['object']['key'])
     transcript = json.loads(obj.get()['Body'].read().decode('utf-8'))
     
     # Load openai api key
