@@ -43,10 +43,6 @@ def handler(event, context):
     for transcript_object in transcript_objects:
         db.transcripts_create(transcript_object)
 
-def _enrich_transcript(transcript):
-    # Concatenate all the text to a single string
-    text = '\n'.join([item['text'] for item in transcript])
-    pass
 
 def _create_transcript_objects_from_transcript(transcript, video_id):
     transcript_objects = []
