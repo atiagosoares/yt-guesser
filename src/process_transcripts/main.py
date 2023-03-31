@@ -5,8 +5,7 @@ from enricher import OpenAIChatEnricher
 import db
 
 import nltk
-nltk.data.path.append("/tmp")
-nltk.download("punkt", download_dir="/tmp")
+
 
 
 OPENAI_API_KEY_PARAMETER_NAME = os.environ.get('OPENAI_API_KEY_PARAMETER_NAME')
@@ -23,6 +22,9 @@ def get_db():
     return _DB
 
 def handler(event, context):
+
+    # Download dependencies
+    _download_punk()
 
     # Unpack s3 data
     s3_event = event['Records'][0]['s3']
@@ -68,3 +70,8 @@ def _get_parameter_value(parameter_name):
     response = ssm.get_parameter(Name=parameter_name, WithDecryption=True)
     return response['Parameter']['Value']
 
+def _download_punk():
+    nltk.data.path.append("/tmp")
+    nltk.download("punkt", download_dir="/tmp")
+    # Show contents of /tmp
+    print(os.listdir("/tmp"))
