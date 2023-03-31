@@ -4,6 +4,11 @@ import json
 from enricher import OpenAIChatEnricher
 import db
 
+import nltk
+nltk.data.path.append("/tmp")
+nltk.download("punkt", download_dir="/tmp")
+
+
 OPENAI_API_KEY_PARAMETER_NAME = os.environ.get('OPENAI_API_KEY_PARAMETER_NAME')
 
 DB = None

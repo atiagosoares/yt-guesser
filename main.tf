@@ -240,6 +240,7 @@ resource "aws_lambda_function" "transcript_processor" {
       VIDEOS_TABLE = aws_dynamodb_table.videos_table.name
       TRANSCRIPTS_TABLE = aws_dynamodb_table.transcripts_table.name
       OPENAI_API_KEY_PARAMETER_NAME = "${var.PROJECT}-${var.ENV}-openai-api-key"
+      NLTK_DATA = "/nltk_data"
     }
   }
 }
