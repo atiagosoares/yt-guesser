@@ -55,10 +55,17 @@ class OpenAIChatEnricher(TranscriptEnricher):
 
         return enriched_transcript
 
-
     def _count_tokens(self, text):
         tokens = word_tokenize(text)
         return len(tokens)
+    
+    def _get_pos_timestamps(self, transcription):
+        pos_timestamps = []
+        cur_pos = 0
+        for caption in transcription:
+            pos_timestamps.append((cur_pos, caption['start']))
+            cur_pos += len(caption['text']) + 1
+        return pos_timestamps
     
 class PositionInterpolator():
     def __init__(self, positions_ts: list):
