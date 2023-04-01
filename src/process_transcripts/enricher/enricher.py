@@ -26,16 +26,39 @@ class OpenAIChatEnricher(TranscriptEnricher):
     def enrich(self, transcript: list):
 
         # Get the count of tokens for each every caption
+        print('Counting tokens in captions...')
+        captions = [caption['text'] for caption in transcript]
+        token_counts = list(map(self._count_tokens, captions))
 
-        # Create a list of [(caption text, token count)]
-
-        # Create chunks of captions
+        # Creates chunks of captions based on the token count
+        print('Creating chunks of captions...')
+        captions = list(zip(captions, token_counts))
+        chunks = self._create_chunks(captions)
 
         # Generate prompts from chunks
+        print('Generating prompts...')
+        prompts = list(map(self._gen_prompt, chunks))
+        print(len(prompts)) # Should be one
 
         # Create chat completions from prompts
+        print('Creating chat completions...')
+        chat_completions = list(map(self._chat_completion, prompts))
 
         # Amend chat completions
+        print('Amending chat completions...')
+        amended_chat_completions = self._amend_completions(chat_completions)
+
+        # Parse the chat completion
+        print('Parsing chat completions...')
+        enriched_transcript = self._parse_chat_completion(amended_chat_completions)
+
+        # Interpolate timestamps for the enriched transcript,
+        # based on the original transcript postions and timestamps
+        print('Interpolating timestamps...')
+        pos_timestamps = self._get_pos_timestamps(transcript)
+        interpolator = PositionInterpolator(pos_timestamps)
+        for cap in enriched_transcript:
+            cap['start'] = interpolator.interpolate(cap['position'])
 
         return enriched_transcript
 
@@ -85,7 +108,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
             'Authorization': 'Bearer ' + self.api_key
         }
         messages = [
-            {'role': 'user', 'content': self + text}
+            {'role': 'user', 'content': self.base_prompt + text}
         ]
         body = {
             "model": self.model,
@@ -95,6 +118,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
 
         # Exponential backoff request
         backoff_time = 0.1
+        print('Requesting chat completion...')
         for i in range(10):
             response = requests.post(url, headers=headers, json = body)
 
@@ -105,7 +129,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
                 break
         
         response.raise_for_status()
-        return response['choices'][0]['message']['content']
+        return response.json()['choices'][0]['message']['content']
     
     def _amend_completions(self, completions: list):
         amended_completion = ''

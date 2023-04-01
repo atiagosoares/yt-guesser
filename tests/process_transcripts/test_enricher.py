@@ -185,3 +185,10 @@ def test_interpolate_outside():
     # Edge case: interpolationpoints outside curve points
     assert interpolator.interpolate(-1) == -1.2
     assert interpolator.interpolate(11) == 9.6
+
+# ------------------------------------------------------- INTEGRATION TEST -------------------------------------------------------
+def test_enrich():
+    # Must run without errors
+    enriched_transcript = enricher.enrich(transcript)
+    for cap in enriched_transcript:
+        print(f"{cap['start']}: {cap['text']}")
