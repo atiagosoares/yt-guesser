@@ -3,9 +3,7 @@ import os
 import json
 from enricher import OpenAIChatEnricher
 import db
-
 import nltk
-
 
 
 OPENAI_API_KEY_PARAMETER_NAME = os.environ.get('OPENAI_API_KEY_PARAMETER_NAME')

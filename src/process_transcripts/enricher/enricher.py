@@ -72,7 +72,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
         token_chunks = []
 
         # Tokenize the wall
-        tokens = word_tokenize(self, wall)
+        tokens = word_tokenize(wall)
 
         # Split the tokens into chunks
         for i in range(0, len(tokens), chunk_size):
@@ -89,7 +89,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
             'Authorization': 'Bearer ' + self.api_key
         }
         messages = [
-            {'role': 'user', 'content': self + text}
+            {'role': 'user', 'content': self.base_prompt + text}
         ]
         body = {
             "model": self.model,

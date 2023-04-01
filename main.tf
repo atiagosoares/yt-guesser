@@ -228,14 +228,13 @@ resource "aws_ecr_repository" "transcript_processor_repo" {
   }
 }
 data "aws_ecr_image" "transcript_processor_img" {
-  repository_name = aws_ecr_repository.transcript_processor.name
+  repository_name = aws_ecr_repository.transcript_processor_repo.name
   image_tag       = "latest"
 }
 resource "aws_lambda_function" "transcript_processor" {
   function_name = "${var.PROJECT}-${var.ENV}-process-transcripts"
   role          = aws_iam_role.transcript_processor_role.arn
-  handler       = "main.handler"
-  runtime       = "python3.9"
+  package_type  = "Image"
   image_uri     = "${aws_ecr_repository.transcript_processor_repo.repository_url}@${data.aws_ecr_image.transcript_processor_img.id}"
   timeout       = 900
   memory_size   = 512
@@ -246,7 +245,6 @@ resource "aws_lambda_function" "transcript_processor" {
       VIDEOS_TABLE = aws_dynamodb_table.videos_table.name
       TRANSCRIPTS_TABLE = aws_dynamodb_table.transcripts_table.name
       OPENAI_API_KEY_PARAMETER_NAME = "${var.PROJECT}-${var.ENV}-openai-api-key"
-      NLTK_DATA = "/nltk_data"
     }
   }
 }
