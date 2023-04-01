@@ -140,7 +140,7 @@ def test_gen_prompt_multiple():
 
 # ------------------------------------------------------- PARSE COMPLETION -------------------------------------------------------
 def test_parse_completion_empty():
-    # Edge case: empty caption
+    # Edge case: empty caion
     completion = 'Foo.\nBar.\nBaz.\n'
     parsed_completion = enricher._parse_completion(completion)
     assert parsed_completion == [

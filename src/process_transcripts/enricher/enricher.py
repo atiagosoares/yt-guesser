@@ -93,6 +93,45 @@ class OpenAIChatEnricher(TranscriptEnricher):
             prompt += '\n' + cap
         return prompt
     
+    def _chat_completion(self, text):
+
+        url = 'https://api.openai.com/v1/chat/completions'
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.api_key
+        }
+        messages = [
+            {'role': 'user', 'content': self + text}
+        ]
+        body = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0
+        }
+
+        # Exponential backoff request
+        backoff_time = 0.1
+        for i in range(10):
+            response = requests.post(url, headers=headers, json = body)
+
+            if response.status_code == 429 or response.status_code == 500:
+                time.sleep(backoff_time)
+                backoff_time *= 2
+            else:
+                break
+        
+        response.raise_for_status()
+        return response['choices'][0]['message']['content']
+    
+    def _parse_completion(self, completion: str):
+        completion_lines = completion.splitlines()
+        transcript = []
+        pos = 0
+        for line in completion_lines:
+            transcript.append({'text': line, 'start': None, 'position': pos})
+            pos += len(line) + 1
+        return transcript
+    
 class PositionInterpolator():
     def __init__(self, positions_ts: list):
         # Sort by position
