@@ -45,7 +45,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
         transcript_positions = self._find_transcript_positions(enriched_wall, transcript)
         # Create map of position -> timestamp
         position_timestamps = ApproximateMap()
-        for pos, ts in zip(transcript_positions, [item['timestamp'] for item in transcript]):
+        for pos, ts in zip(transcript_positions, [item['start'] for item in transcript]):
             # Exlude cases where the position is None
             if pos:
                 position_timestamps.add(pos, ts)
@@ -109,7 +109,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
                 break
         
         response.raise_for_status()
-        return response['choices'][0]['message']['content']
+        return response.json()['choices'][0]['message']['content']
     
     def _join_chunks(self, chunks):
         '''
@@ -149,13 +149,15 @@ class OpenAIChatEnricher(TranscriptEnricher):
             t_entry = {
                 'text': entry
             }
-            
+
             # Update bounds
-            if entry_pos >= upper_bound[0]:
-                lower_bound = upper_bound
-                upper_bound = position_timestamps.get_gteq(entry_pos)
+            if upper_bound:
+                if entry_pos >= upper_bound[0]:
+                    lower_bound = upper_bound
+                    upper_bound = position_timestamps.get_gteq(entry_pos)
+
             # Interpolate the start timestamp
-            start_estimate = self.interpolate_value(lower_bound[0], upper_bound[0], lower_bound[1], upper_bound[1], entry_pos)
+            start_estimate = interpolate_value(lower_bound[0], upper_bound[0], lower_bound[1], upper_bound[1], entry_pos)
             t_entry['start'] = int(start_estimate*1000) - start_safe_margin_ms
 
             # Interpolate the end timestamp
