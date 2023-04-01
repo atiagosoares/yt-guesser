@@ -23,7 +23,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
         self.base_prompt = BasePrompt
         self.model = model
 
-    def enrich(self, transcript):
+    def enrich(self, transcript: list):
 
         # Concatenate the transcript
         print('Creating the wall of text...')
@@ -55,17 +55,35 @@ class OpenAIChatEnricher(TranscriptEnricher):
 
         return enriched_transcript
 
-    def _count_tokens(self, text):
+    def _count_tokens(self, text: str):
         tokens = word_tokenize(text)
         return len(tokens)
     
-    def _get_pos_timestamps(self, transcription):
+    def _get_pos_timestamps(self, transcription: list):
         pos_timestamps = []
         cur_pos = 0
         for caption in transcription:
             pos_timestamps.append((cur_pos, caption['start']))
             cur_pos += len(caption['text']) + 1
         return pos_timestamps
+    
+    def _create_chunks(self, captions):
+        chunks = []
+        chunk_size = 0
+        cur_chunk = []
+        for cap in captions:
+            if cap[1] > 1500:
+                raise(ValueError('Transcription has a caption over 1500 tokens'))
+            
+            if chunk_size + cap[1] > 1500:
+                # Create a new chunk
+                chunks.append(cur_chunk)
+                cur_chunk = []
+
+            cur_chunk.append(cap[0])
+            chunk_size += cap[1]
+
+        return chunks
     
 class PositionInterpolator():
     def __init__(self, positions_ts: list):
