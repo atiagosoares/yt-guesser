@@ -35,10 +35,10 @@ def test_count_tokens():
     assert enricher._count_tokens(transcript[1]['text']) == 9
     assert enricher._count_tokens(transcript[2]['text']) == 7
 
-def test_map_count_tokens():
+def test_count_tokens_map():
     # Should return something like this:
     captions = [caption['text'] for caption in transcript]
-    token_counts = captions.map(enricher._count_tokens)
+    token_counts = list(map(enricher._count_tokens, captions))
     assert token_counts == [len(caption.split(' ')) for caption in captions]
 
 # ------------------------------------------------------- GET POS TIMESTAMPS --------------------------------------------------
