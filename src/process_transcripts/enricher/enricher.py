@@ -50,7 +50,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
 
         # Parse the chat completion
         print('Parsing chat completions...')
-        enriched_transcript = self._parse_chat_completion(amended_chat_completions)
+        enriched_transcript = self._parse_completion(amended_chat_completions)
 
         # Interpolate timestamps for the enriched transcript,
         # based on the original transcript postions and timestamps
@@ -121,7 +121,6 @@ class OpenAIChatEnricher(TranscriptEnricher):
         print('Requesting chat completion...')
         for i in range(10):
             response = requests.post(url, headers=headers, json = body)
-
             if response.status_code == 429 or response.status_code == 500:
                 time.sleep(backoff_time)
                 backoff_time *= 2
