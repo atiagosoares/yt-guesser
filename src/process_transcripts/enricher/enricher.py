@@ -168,10 +168,21 @@ class OpenAIChatEnricher(TranscriptEnricher):
 
         return enriched_transcript
     
-def interpolate_value(a, c, fa, fc, b):
-    '''
-    Interpolates a value between two timestamps
-    '''
-    d = (fc - fa) / (c - a)
-    return fa + d * (b - a)
-        
+class PositionInterpolator():
+    def __init__(self, positions_ts: list):
+        # Sort by position
+        positions_ts.sort(key = lambda x: x[0])
+        self.positions_ts = positions_ts
+    
+    def interpolate(self, p):
+        # Find the closest two points to p
+        a, b = self.positions_ts[:2]
+        dist = abs(a[0] + b[0] -2*p)
+        for i in range(3, len(self.positions_ts) + 1):
+            temp_a, temp_b = self.positions_ts[i-2:i]
+            temp_dist = abs(temp_a[0] + temp_b[0] - 2*p)
+            if temp_dist >= dist:
+                break 
+            a, b, dist = temp_a, temp_b, temp_dist
+        # Interpolate
+        return a[1] + (p - a[0])*(b[1] - a[1])/(b[0] - a[0])

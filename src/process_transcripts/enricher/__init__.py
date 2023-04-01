@@ -1,1 +1,1 @@
-from .enricher import OpenAIChatEnricher
+from .enricher import OpenAIChatEnricher, PositionInterpolator

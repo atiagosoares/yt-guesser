@@ -151,7 +151,7 @@ def test_parse_completion_empty():
 
 # ------------------------------------------------------- Interpolator -------------------------------------------------------
 positions = [(0, 0.00), (5, 6.00), (10, 9.00)]
-interpolator = enricher.Interpolator(positions)
+interpolator = PositionInterpolator(positions)
 
 def test_interpolate_defined():
     # Edge case: interpolationpoints matches curve points
@@ -159,7 +159,7 @@ def test_interpolate_defined():
     assert interpolator.interpolate(5) == 6.00
     assert interpolator.interpolate(10) == 9.00
 
-def test_interpolate_between():
+def test_interpolate_inside():
     # Edge case: interpolationpoints does not match curve points
     assert interpolator.interpolate(1) == 1.20
     assert interpolator.interpolate(2) == 2.40
@@ -174,4 +174,4 @@ def test_interpolate_between():
 def test_interpolate_outside():
     # Edge case: interpolationpoints outside curve points
     assert interpolator.interpolate(-1) == -1.2
-    assert interpolator.interpolate(11) == 10.6
+    assert interpolator.interpolate(11) == 9.6
