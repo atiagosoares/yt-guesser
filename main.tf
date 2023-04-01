@@ -241,10 +241,11 @@ resource "aws_lambda_function" "transcript_processor" {
 
   environment {
     variables = {
-      CHANNELS_TABLE = aws_dynamodb_table.channels_table.name
-      VIDEOS_TABLE = aws_dynamodb_table.videos_table.name
-      TRANSCRIPTS_TABLE = aws_dynamodb_table.transcripts_table.name
+      CHANNELS_TABLE_NAME = aws_dynamodb_table.channels_table.name
+      VIDEOS_TABLE_NAME = aws_dynamodb_table.videos_table.name
+      TRANSCRIPTS_TABLE_NAME = aws_dynamodb_table.transcripts_table.name
       OPENAI_API_KEY_PARAMETER_NAME = "${var.PROJECT}-${var.ENV}-openai-api-key"
+      NLTK_DATA = "/var/task/nltk_data"
     }
   }
 }
