@@ -60,7 +60,7 @@ def test_get_pos_timestamps_single():
     # Should never happen, but behavior is defined, just in case
     captions = [{'start': 0.00, 'text': 'foo'}]
     timestamps = enricher._get_pos_timestamps(captions)
-    assert timestamps == [(0, 0.00)]
+    assert timestamps == [(0, 0)]
 
 def test_get_pos_timestamps_multiple():
     # Multiple captions
@@ -70,7 +70,7 @@ def test_get_pos_timestamps_multiple():
         {'start': 10.00, 'text': 'baz'}
     ]
     timestamps = enricher._get_pos_timestamps(captions)
-    assert timestamps == [(0, 0.00), (4, 5.00), (8, 10.00)]
+    assert timestamps == [(0, 0), (4, 5000), (8, 10000)]
 
 # ------------------------------------------------------- CREATE CHUNKS -------------------------------------------------------
 def test_create_chunks_empty_list():
@@ -160,34 +160,33 @@ def test_parse_completion_empty():
     ]
 
 # ------------------------------------------------------- Interpolator -------------------------------------------------------
-positions = [(0, 0.00), (5, 6.00), (10, 9.00)]
+positions = [(0, 0), (6, 10000), (12, 26000)]
 interpolator = PositionInterpolator(positions)
 
 def test_interpolate_defined():
     # Edge case: interpolationpoints matches curve points
-    assert interpolator.interpolate(0) == 0.00
-    assert interpolator.interpolate(5) == 6.00
-    assert interpolator.interpolate(10) == 9.00
+    assert interpolator.interpolate(0) == 0
+    assert interpolator.interpolate(6) == 10000
+    assert interpolator.interpolate(12) == 26000
 
 def test_interpolate_inside():
     # Edge case: interpolationpoints does not match curve points
-    assert interpolator.interpolate(1) == 1.20
-    assert interpolator.interpolate(2) == 2.40
-    assert interpolator.interpolate(3) == 3.60
-    assert interpolator.interpolate(4) == 4.80
+    assert interpolator.interpolate(1) == 1666
+    assert interpolator.interpolate(2) == 3333
+    assert interpolator.interpolate(3) == 5000
 
-    assert interpolator.interpolate(6) == 6.6
-    assert interpolator.interpolate(7) == 7.2
-    assert interpolator.interpolate(8) == 7.8
-    assert interpolator.interpolate(9) == 8.4
+    assert interpolator.interpolate(7) == 12666
+    assert interpolator.interpolate(8) == 15333
+    assert interpolator.interpolate(9) == 18000
 
 def test_interpolate_outside():
     # Edge case: interpolationpoints outside curve points
-    assert interpolator.interpolate(-1) == -1.2
-    assert interpolator.interpolate(11) == 9.6
+    assert interpolator.interpolate(-1) == -1666
+    assert interpolator.interpolate(13) == 28666
 
 # ------------------------------------------------------- INTEGRATION TEST -------------------------------------------------------
 # Uncomment and run manually with pytest
+
 
 # def test_enrich():
 #     # Must run without errors

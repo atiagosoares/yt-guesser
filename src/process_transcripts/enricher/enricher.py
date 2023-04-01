@@ -55,7 +55,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
         # Interpolate timestamps for the enriched transcript,
         # based on the original transcript postions and timestamps
         print('Interpolating timestamps...')
-        pos_timestamps = self._get_pos_timestamps(transcript)
+        pos_timestamps = self._get_pos_timestamps(transcript) # Will convert to timestamp to int, in ms
         interpolator = PositionInterpolator(pos_timestamps)
         for cap in enriched_transcript:
             cap['start'] = interpolator.interpolate(cap['position'])
@@ -70,7 +70,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
         pos_timestamps = []
         cur_pos = 0
         for caption in transcription:
-            pos_timestamps.append((cur_pos, caption['start']))
+            pos_timestamps.append((cur_pos, int(caption['start']*1000)))
             cur_pos += len(caption['text']) + 1
         return pos_timestamps
     
@@ -176,4 +176,4 @@ class PositionInterpolator():
                 break 
             a, b, dist = temp_a, temp_b, temp_dist
         # Interpolate
-        return a[1] + (p - a[0])*(b[1] - a[1])/(b[0] - a[0])
+        return int(a[1] + (p - a[0])*(b[1] - a[1])/(b[0] - a[0]))
