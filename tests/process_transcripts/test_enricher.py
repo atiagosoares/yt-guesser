@@ -138,6 +138,16 @@ def test_gen_prompt_multiple():
 # Will not test because interacts with OpenAI API
 # Will leave it to the will of the gods
 
+# ------------------------------------------------------- AMEND COMPLETIONS ------------------------------------------------------
+def test_amend_completions_00():
+    completions = []
+    want = '\n'
+    assert enricher._amend_completions(completions) == want
+
+def test_amend_completions_01():
+    completions = ['\n Foo.', 'Bar [INCOMPLETE]', '[INCOMPLETE] baz. \n']
+    want = '\nFoo.\nBar baz.'
+    assert enricher._amend_completions(completions) == want
 # ------------------------------------------------------- PARSE COMPLETION -------------------------------------------------------
 def test_parse_completion_empty():
     # Edge case: empty caion

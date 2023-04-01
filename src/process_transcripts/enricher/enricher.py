@@ -25,33 +25,17 @@ class OpenAIChatEnricher(TranscriptEnricher):
 
     def enrich(self, transcript: list):
 
-        # Concatenate the transcript
-        print('Creating the wall of text...')
-        poor_wall = self._concat_transcript(transcript) # wall of text
-        
-        # Split the wall into chunks
-        print('Creating chunks...')
-        chunks = self._chunck_wall(poor_wall)
-        
-        # Enrich the the chunks
-        print('Enriching the chunks...')
-        enriched_chunks = [self._enrich_text(chunk) for chunk in chunks]
-        
-        # Concatenate the chunks
-        print('Concatenating the chunks...')
-        enriched_wall = self._join_chunks(chunks)
+        # Get the count of tokens for each every caption
 
-        # Find the positon for the transcript entries
-        transcript_positions = self._find_transcript_positions(enriched_wall, transcript)
-        # Create map of position -> timestamp
-        position_timestamps = ApproximateMap()
-        for pos, ts in zip(transcript_positions, [item['start'] for item in transcript]):
-            # Exlude cases where the position is None
-            if pos:
-                position_timestamps.add(pos, ts)
+        # Create a list of [(caption text, token count)]
 
-        # Recompose the enriched wall into a transcript
-        enriched_transcript = self._recompose_transcript(enriched_wall, position_timestamps)
+        # Create chunks of captions
+
+        # Generate prompts from chunks
+
+        # Create chat completions from prompts
+
+        # Amend chat completions
 
         return enriched_transcript
 
@@ -122,6 +106,26 @@ class OpenAIChatEnricher(TranscriptEnricher):
         
         response.raise_for_status()
         return response['choices'][0]['message']['content']
+    
+    def _amend_completions(self, completions: list):
+        amended_completion = ''
+        start_char = '\n'
+        for completion in completions:
+            # Strip
+            completion = completion.strip()
+            # Check for [INCOMPLETE] tags at the beginning end of the completion
+            if completion.startswith('[INCOMPLETE]'):
+                completion = completion[12:].strip()
+            
+            amended_completion += start_char + completion
+            # Check for the [INCOMPLETE] tag at the end
+            if amended_completion.endswith('[INCOMPLETE]'):
+                amended_completion = amended_completion[:-12].strip()
+                start_char = ' '
+            else:
+                start_char = '\n'
+
+        return '\n' + amended_completion
     
     def _parse_completion(self, completion: str):
         completion_lines = completion.splitlines()
