@@ -23,7 +23,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
         self.base_prompt = BasePrompt
         self.model = model
 
-    def enrich(self, transcript: list):
+    def enrich(self, transcript: list, timestamp_safety_margin = 1500):
 
         # Get the count of tokens for each every caption
         print('Counting tokens in captions...')
@@ -58,7 +58,7 @@ class OpenAIChatEnricher(TranscriptEnricher):
         pos_timestamps = self._get_pos_timestamps(transcript) # Will convert to timestamp to int, in ms
         interpolator = PositionInterpolator(pos_timestamps)
         for cap in enriched_transcript:
-            cap['start'] = interpolator.interpolate(cap['position'])
+            cap['start'] = interpolator.interpolate(cap['position']) - timestamp_safety_margin
 
         return enriched_transcript
 
