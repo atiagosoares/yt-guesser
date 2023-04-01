@@ -87,6 +87,12 @@ class OpenAIChatEnricher(TranscriptEnricher):
 
         return chunks
     
+    def _gen_prompt(self, captions: list):
+        prompt = ''
+        for cap in captions:
+            prompt += '\n' + cap
+        return prompt
+    
 class PositionInterpolator():
     def __init__(self, positions_ts: list):
         # Sort by position

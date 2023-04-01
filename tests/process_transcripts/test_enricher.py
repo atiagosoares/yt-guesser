@@ -121,17 +121,17 @@ def test_create_chunks_over_max_size():
 # ------------------------------------------------------- GEN PROMPT -------------------------------------------------------
 def test_gen_prompt_empty():
     # Edge case: empty caption
-    prompt = enricher._gen_prompts([])
-    assert prompt == '\n'
+    prompt = enricher._gen_prompt([])
+    assert prompt == ''
 
 def test_gen_prompt_single():
     # Single caption
-    prompt = enricher._gen_prompts(['foo'])
+    prompt = enricher._gen_prompt(['foo'])
     assert prompt == '\nfoo'
 
 def test_gen_prompt_multiple():
     # Multiple captions
-    prompt = enricher._gen_prompts(['foo', 'bar'])
+    prompt = enricher._gen_prompt(['foo', 'bar'])
     assert prompt == '\nfoo\nbar'
 
 # ------------------------------------------------------- CHAT COMPLETION -------------------------------------------------------
