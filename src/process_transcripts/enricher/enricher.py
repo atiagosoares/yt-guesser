@@ -74,14 +74,16 @@ class OpenAIChatEnricher(TranscriptEnricher):
         for cap in captions:
             if cap[1] > 1500:
                 raise(ValueError('Transcription has a caption over 1500 tokens'))
-            
             if chunk_size + cap[1] > 1500:
                 # Create a new chunk
                 chunks.append(cur_chunk)
                 cur_chunk = []
-
             cur_chunk.append(cap[0])
             chunk_size += cap[1]
+
+        # Append the last chunk
+        if cur_chunk != []:
+            chunks.append(cur_chunk)
 
         return chunks
     
