@@ -1,6 +1,6 @@
 BasePrompt = '''
 Get an audio transcription as an input. Split and merge the words of the transcription into groups of sentences that convey complete thoughts.
-- The resulting groups of sentences must be between ten and fifty works long
+- The resulting groups of sentences must be between ten and fifty words long
 - I reiterate: The resulting groups of sentences must be between ten and fifty words long
 - The resulting groups of sentences should be newline separated. Do not use newlines for anything else.
 - Ignore newlines in the input
