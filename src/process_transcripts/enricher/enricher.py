@@ -16,6 +16,14 @@ class TranscriptEnricher():
     def enrich(self, transcript):
         pass
 
+class MockEnricher(TranscriptEnricher):
+
+    def __init__(self):
+        pass
+
+    def enrich(self, transcript):
+        return transcript
+
 class OpenAIChatEnricher(TranscriptEnricher):
 
     def __init__(self, api_key, model = "gpt-3.5-turbo"):
