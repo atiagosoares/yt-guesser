@@ -22,7 +22,12 @@ class MockEnricher(TranscriptEnricher):
         pass
 
     def enrich(self, transcript):
-        return transcript[:2]
+        transcript = transcript[:2]
+        # Remove durantion, and convert 'start' to miliseconds in int
+        for caption in transcript:
+            caption['start'] = int(caption['start'] * 1000)
+            del caption['duration']
+        return transcript
 
 class OpenAIChatEnricher(TranscriptEnricher):
 
