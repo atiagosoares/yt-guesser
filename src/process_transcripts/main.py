@@ -63,7 +63,7 @@ class Controller():
         transcript = json.loads(obj.get()['Body'].read().decode('utf-8'))
         return transcript
 
-    def _create_transcript_objects_from_transcript(transcript, video_id):
+    def _create_transcript_objects_from_transcript(self, transcript, video_id):
         transcript_objects = []
         for item in transcript:
             transcript_object = {
