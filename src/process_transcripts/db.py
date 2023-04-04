@@ -15,14 +15,16 @@ class YTGuesserDB(object):
     def channels_remove(self, uid):
         pass
 
-    def videos_list(self, uid, description=None, state=None,
-                    metadata=None):
+    def videos_list(self, uid, description=None, state=None, metadata=None):
         pass
 
     def videos_get(self, uid):
         pass
 
     def videos_create(self, video):
+        pass
+
+    def videos_update(self, video):
         pass
 
     def transcripts_list(video_id, start = None, end = None, curated = None):
@@ -36,6 +38,85 @@ class YTGuesserDB(object):
 
     def transcripts_curate():
         pass
+
+class MockDB(YTGuesserDB):
+    def __init__(self):
+        self._channels = []
+        self._videos = []
+        self._transcripts = []
+    
+    def channels_list(self):
+        return self._channels
+    
+    def channels_get(self, channel_id):
+        for channel in self._channels:
+            if channel['id'] == channel_id:
+                return channel
+        return None
+    
+    def channels_create(self, channel_info):
+        self._channels.append(channel_info)
+        return True
+    
+    def channels_delete(self, channel_id):
+        for channel in self._channels:
+            if channel['id'] == channel_id:
+                self._channels.remove(channel)
+                return True
+        return False
+    
+    def videos_list(self, channel_id = None):
+        if channel_id is None:
+            return self._videos
+        else:
+            return [video for video in self._videos if video['channel_id'] == channel_id]
+        
+    def videos_get(self, video_id):
+        for video in self._videos:
+            if video['id'] == video_id:
+                return video
+        return None 
+    
+    def videos_create(self, video_info):
+        self._videos.append(video_info)
+        return True
+    
+    def videos_update(self, video_info):
+        for video in self._videos:
+            if video['id'] == video_info['id']:
+                video.update(video_info)
+                return True
+        return False
+    
+    def videos_delete(self, video_id):
+        for video in self._videos:
+            if video['id'] == video_id:
+                self._videos.remove(video)
+                return True
+        return False
+    
+    def transcripts_list(self, video_id, start = None, end = None, curated = None):
+        if start is None:
+            start = 0
+        if end is None:
+            end = float('inf')
+        if curated is None:
+            curated = False
+        
+        response = []
+        for transcript in self._transcripts:
+            if transcript['video_id'] == video_id and transcript['start'] >= start and transcript['start'] <= end and transcript['curated'] == curated:
+                response.append(transcript)
+        return response
+    
+    def transcripts_get(self, video_id, start):
+        for transcript in self._transcripts:
+            if transcript['video_id'] == video_id and transcript['start'] == start:
+                return transcript
+        return None
+    
+    def transcripts_create(self, transcript_info):
+        self._transcripts.append(transcript_info)
 
 
 class DynamoDB(YTGuesserDB):
