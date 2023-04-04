@@ -22,7 +22,7 @@ class MockEnricher(TranscriptEnricher):
         pass
 
     def enrich(self, transcript):
-        return transcript
+        return transcript[:2]
 
 class OpenAIChatEnricher(TranscriptEnricher):
 
