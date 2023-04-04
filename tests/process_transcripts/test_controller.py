@@ -40,3 +40,27 @@ def test_create_transcript_objects():
         "url": "https://www.youtube.com/watch?v=video-id&t=1",
         "video_id": "video-id"
     }]
+
+def test_process_event():
+    transcripts = controller.process_event(brain_waves_event['Records'][0]['s3'])
+    want = [
+        {
+            "video_id": "-HYbFm67Gs8",
+            "text": "today I'm going to put this weird thing",
+            "start": 0,
+            "speaker": None,
+            "curated": None,
+            "url": "https://www.youtube.com/watch?v=-HYbFm67Gs8&t=0"
+        },
+        {   
+            "video_id": "-HYbFm67Gs8",
+            "text": "on my head and communicate with gpt4",
+            "start": 1800,
+            "speaker": None,
+            "curated": None,
+            "url": "https://www.youtube.com/watch?v=-HYbFm67Gs8&t=1",
+        }
+    ]
+
+    assert transcripts == want
+    assert db.transcripts_list("-HYbFm67Gs8") == want

@@ -56,6 +56,8 @@ class Controller():
         # Insert transcript objects into the transcripts table
         for transcript_object in transcript_objects:
             self.db.transcripts_create(transcript_object)
+
+        return transcript_objects
     
     def _load_transcript(self, bucket_name, key):
         s3 = boto3.resource('s3')
