@@ -100,8 +100,6 @@ class MockDB(YTGuesserDB):
             start = 0
         if end is None:
             end = float('inf')
-        if curated is None:
-            curated = False
         
         response = []
         for transcript in self._transcripts:
