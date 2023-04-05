@@ -44,6 +44,11 @@ class Controller():
         # Get the video id from the event
         video_id = event['object']['key'].split('.')[0]
 
+        # Check the size of the transcript. Objects over 100kb are not processed.
+        if event['object']['size'] >= 100000:
+            print(f'Transcript for {video_id} is too large. Ignoring.')
+            return
+
         # Load the transcript
         transcript = self._load_transcript(event['bucket']['name'], event['object']['key'])
 

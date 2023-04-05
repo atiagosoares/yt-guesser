@@ -41,7 +41,7 @@ def test_create_transcript_objects():
         "video_id": "video-id"
     }]
 
-def test_process_event():
+def test_basic_event():
     transcripts = controller.process_event(brain_waves_event['Records'][0]['s3'])
     want = [
         {
@@ -64,3 +64,14 @@ def test_process_event():
 
     assert transcripts == want
     assert db.transcripts_list("-HYbFm67Gs8") == want
+
+def test_large_file():
+    '''
+    Tests whether the controller ignores large files.
+    '''
+    with open('tests/test_events/large-file.json') as f:
+        # This is a large file. Controller should ignore it.
+        event = json.load(f)
+
+    transcripts = controller.process_event(event['Records'][0]['s3'])
+    assert transcripts == None
