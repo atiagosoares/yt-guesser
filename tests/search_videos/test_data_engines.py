@@ -2,10 +2,10 @@ import sys
 sys.path.append('src/search_videos')
 
 import pytest
-from data_engines import MockDataEngine
+from data_engines import MockData
 
 #==================  Mock Interface ==================
-engine = MockDataEngine()
+engine = MockData()
 
 # Function to check if a dict is a valid video object
 def _is_valid_video_object(video: dict) -> bool:
