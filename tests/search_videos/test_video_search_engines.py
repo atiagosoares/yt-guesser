@@ -1,7 +1,7 @@
 import sys
 sys.path.append('src/search_videos')
 
-import pystest
+import pytest
 from search_engines import MockSearch
 
 #==================  Mock Interface ==================
@@ -17,6 +17,7 @@ def _is_valid_video_object(video: dict) -> bool:
         return False
     if not video.get('title'):
         return False
+    return True
     
 # The objective of these tests is defining a valid interface
 def test_mock_engine():
