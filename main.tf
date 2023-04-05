@@ -249,3 +249,22 @@ resource "aws_lambda_function" "transcript_processor" {
     }
   }
 }
+# Allos S3 to invoke the lambda
+resource "aws_lambda_permission" "allow_bucket" {
+  statement_id  = "AllowExecutionFromTranscriptsS3Bucket"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.transcript_processor.arn
+  principal     = "s3.amazonaws.com"
+  source_arn    = aws_s3_bucket.original_transcripts.arn
+}
+
+# S3 Event Trigger
+resource "aws_s3_bucket_notification" "bucket_notification" {
+  bucket = aws_s3_bucket.original_transcripts.id
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.transcript_processor.arn
+    events              = ["s3:ObjectCreated:*"]
+  }
+  depends_on = [aws_lambda_permission.allow_bucket]
+}
