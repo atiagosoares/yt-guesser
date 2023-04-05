@@ -4,7 +4,7 @@ class DataEngine():
     def get_transcript(self, video_id: str) -> list:
         pass
 
-# Mock engine
+# ================== MOCK ENGINE ==================
 class MockData(DataEngine):
     def get_latest_video(self, channel_id: str) -> dict:
         return {
@@ -22,3 +22,10 @@ class MockData(DataEngine):
                 'text': 'Mock transcript'
             }
         ]
+
+# ================== YT ENGINE ==================
+class YTData(DataEngine):
+    def get_latest_video(self, channel_id: str) -> dict:
+        pass
+    def get_transcript(self, video_id: str) -> list:
+        pass
