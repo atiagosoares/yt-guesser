@@ -87,6 +87,7 @@ class VideoSearchController:
             video = self.data_engine.get_latest_video(channel['id'])
             if video:
                 videos.append(video)
+        print(videos)
         
         # Filter out videos that already exist in the videos table
         videos = [video for video in videos if not self.db.videos_get(video['id'])]
@@ -100,7 +101,7 @@ class VideoSearchController:
                     Key = f'{video["id"]}.json',
                     Body = json.dumps(transcript)
                 )
-
+        
         # Insert the videos into the videos table
         for video in videos:
             self.db.videos_create(video)
