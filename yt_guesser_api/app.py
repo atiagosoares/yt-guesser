@@ -5,21 +5,8 @@ from chalice import Chalice, NotFoundError, ConflictError, BadRequestError
 from chalicelib import db
 import boto3
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api import CouldNotRetrieveTranscript
- 
-GOOGLE_TOKEN_PARAMETER_NAME = os.environ.get('GOOGLE_TOKEN_PARAMETER_NAME')
-OPENAI_API_KEY_PARAMETER_NAME = os.environ.get('OPENAI_APII_KEY_PARAMETER_NAME')
 TRANSCRIPTS_BUCKET = os.environ.get('TRANSCRIPTS_BUCKET')
-SCOPES = ['https://www.googleapis.com/auth/youtube.readonly']
-
 _DB = None
-_YT = None
 
 # -------------- NECCESSARY BULLSHIT --------------
 def get_db():
@@ -31,25 +18,6 @@ def get_db():
         transcripts_table = boto3.resource('dynamodb').Table(os.environ['TRANSCRIPTS_TABLE_NAME'])
         _DB = db.DynamoDB(channels_table, videos_table, transcripts_table)
     return _DB
-
-def get_yt():
-    global _YT
-    if not _YT:
-        authorized_user_info = json.loads(
-            _get_parameter_value(GOOGLE_TOKEN_PARAMETER_NAME)
-        )
-        creds = Credentials.from_authorized_user_info(
-            authorized_user_info,
-            SCOPES
-        )
-        # If there are no (valid) credentials available, let the user log in.
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            # Save the refreshed credentials to ssm
-            _update_parameter_value(GOOGLE_TOKEN_PARAMETER_NAME, creds.to_json())
-
-        _YT = build('youtube', 'v3', credentials=creds)
-    return _YT
 
 def _get_parameter_value(parameter_name):
     session = boto3.session.Session()
@@ -180,42 +148,3 @@ def search_videos(event):
     # Insert the videos into the videos table
     for video in videos:
         db.videos_create(video)
-
-def _search_recent_videos(channel_id):
-    youtube = get_yt()
-    # This request fetches the 5 most recent videos
-    request = youtube.search().list(
-        part = 'id,snippet',
-        channelId = channel_id,
-        order = 'date'
-    )
-    search = request.execute()
-    return search.get('items')
-
-def _construct_video_object_from_search_result(sr):
-    #sr = search result
-    video = {
-        'id' : sr['id']['videoId'],
-        'channel_id': sr['snippet']['channelId'],
-        'published_at': sr['snippet']['publishedAt'],
-        'title': sr['snippet']['title']
-    }
-    return video
-
-# Download the video transcript and save it to s3 as json
-def _download_transcript(video_id):
-    try:
-        transcript_json = YouTubeTranscriptApi.get_transcript(video_id)
-    except CouldNotRetrieveTranscript as e:
-        print(e)
-        return False
-
-    try:
-        s3 = boto3.resource('s3') 
-        obj = s3.Object(TRANSCRIPTS_BUCKET, f'{video_id}.json')
-        obj.put(Body = json.dumps(transcript_json))
-        return True
-    except Exception as e:
-        print('Could not upload transcript to s3')
-        print(e)
-        return False
