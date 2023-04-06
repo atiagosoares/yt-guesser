@@ -117,34 +117,3 @@ def transcripts_curate():
         raise BadRequestError('Invalid request')
 
     return {'message': 'Transcript curration submitted'}
-
-# -------------- BACKGROUND TASKS --------------
-# Fuction to pool for recently posted videos
-@app.schedule('rate(1 hour)')
-def search_videos(event):
-
-    # List all channels in the channels table
-    db = get_db()
-    channels = db.channels_list()
-
-    # Search recent videos for each channel in the list
-    items = []
-    for channel in channels:
-        search_results = _search_recent_videos(channel['id'])
-        # If the result is not null
-        if search_results:
-            for result in search_results:
-                if result['id']['kind'] == 'youtube#video':
-                    items.append(result)
-    
-    # Convert the search result items to expected video schema
-    videos = [_construct_video_object_from_search_result(item) for item in items]
-
-    # Download their transcripts
-    for video in videos:
-        result = _download_transcript(video['id'])
-        video['transcript_available'] = result
-    
-    # Insert the videos into the videos table
-    for video in videos:
-        db.videos_create(video)
